@@ -1,0 +1,28 @@
+{
+  "name": "test_johnny_five",
+  "version": "1.0.0",
+  "main": "src/index.js",
+  "license": "MIT",
+  "engines": {
+    "node": ">=10.15.0"
+  },
+  "scripts": {
+    "start": "nodemon --exec babel-node src/index.js",
+    "build": "babel src --out-dir dist",
+    "serve": "node dist/index.js"
+  },
+  "dependencies": {
+    "etherport-client": "^0.1.3",
+    "johnny-five": "^1.0.0"
+  },
+  "devDependencies": {
+    "@babel/cli": "^7.0.0-rc.1",
+    "@babel/core": "^7.2.2",
+    "@babel/node": "^7.0.0-rc.1",
+    "@babel/preset-env": "^7.0.0-rc.1",
+    "@babel/preset-es2015": "^7.0.0-beta.53",
+    "babel-preset-es2017-node7": "^0.5.2",
+    "babel-preset-latest-node": "^3.0.1",
+    "nodemon": "^1.18.3"
+  }
+}

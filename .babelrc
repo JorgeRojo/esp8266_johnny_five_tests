@@ -1,0 +1,13 @@
+{
+    "presets": [  
+        //"es2017-node7",
+        // "es2017-node7",
+        ["latest-node", { "target": "10" }]
+    ],
+    "plugins": [
+        // "transform-runtime",
+        // "syntax-async-functions",
+        // "transform-decorators-legacy",
+        // "transform-class-properties",
+    ]
+}
