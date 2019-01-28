@@ -24,6 +24,7 @@
     "@babel/preset-es2015": "^7.0.0-beta.53",
     "babel-preset-es2017-node7": "^0.5.2",
     "babel-preset-latest-node": "^3.0.1",
+    "firmata": "^2.0.0",
     "nodemon": "^1.18.3"
   }
 }

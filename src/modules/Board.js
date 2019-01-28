@@ -1,40 +1,33 @@
-import { EtherPortClient } from 'etherport-client';
-import five from 'johnny-five';
+import { Board } from 'firmata';
+import { EtherPortClient } from 'etherport-client'; 
 import * as config from './../config.json';
+ 
 
-class Board {
 
-    board = null;
-    _onReadyEvents = [];
+const _onReadyEvents = [];
+const board = new Board(new EtherPortClient({
+    host: config.board_host,
+    port: config.board_port
+}));
 
-    constructor() {
+board.on('ready', () => {
+    _onReadyEvents.forEach((event, index) => { 
+        console.log("--------- BOARD READY ---------");
+        console.log(
+            board.firmware.name + " " +
+            board.firmware.version.major + "." +
+            board.firmware.version.minor
+        ); 
+        console.log(board);
+        console.log("-------------------------------");
+        event({ index, board }); 
+    });
+}); 
 
-        console.log(" Board constructor ");
-        this.board = new five.Board({
-            port: new EtherPortClient({
-                host: config.board_host,
-                port: config.board_port,
-            }),
-            repl: false
-        });
-
-        this.board.on('ready', () => {
-            this._onReadyEvents.forEach((event, index) => {
-                event({
-                    name: 'board_on_ready',
-                    index,
-                    board: this.board
-                });
-            });
-        });
+export const onReady = (event) => {
+    if (typeof event == 'function') {
+        _onReadyEvents.push(event);
     }
+} 
 
-    onReady = (event) => {
-        if (typeof event == 'function') {
-            this._onReadyEvents.push(event);
-        }
-    }
-
-}
-
-export default new Board();
+ 

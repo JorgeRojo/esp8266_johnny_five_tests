@@ -1,7 +1,6 @@
 
-import Board from './Board'; 
-import five from 'johnny-five';
-
+import  { onReady } from './Board';  
+ 
 const LED_PIN = 2;
 
 class Blink {
@@ -10,25 +9,25 @@ class Blink {
         this.init();
     }
 
-    handleBroadOnReady = ({ board }) => {
+    handleBroadOnReady({ board }) { 
+        let state = 1;
+        let lastVal = 0;
 
-        board.pinMode(LED_PIN, five.Pin.OUTPUT);
-        // the Led class was acting hinky, so just using Pin here
-        const pin = five.Pin(LED_PIN);
-        let value = 0;
+        // board.pinMode(LED_PIN, board.MODES.OUTPUT);
+        
         setInterval(() => {
-            if (value) {
-                pin.high();
-                value = 0;
-            } else {
-                pin.low();
-                value = 1;
-            }
+            board.digitalWrite(LED_PIN, (state ^= 1));
         }, 100); 
+
+        // board.analogRead(0, function(value) {
+        //     if (value != lastVal) {
+        //         console.log(value);
+        //     }
+        // });
     }
 
     init() {
-        Board.onReady(this.handleBroadOnReady);
+        onReady(this.handleBroadOnReady);
     }
 }
 
