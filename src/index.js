@@ -1,3 +1,3 @@
-import blick from './modules/Blick.js';
-blick.init();
+import './modules/Board';
+import './modules/Blick';
  
