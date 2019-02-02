@@ -4,79 +4,51 @@
  *
  * @format
  * @flow
+ * @lint-ignore-every XPLATJSCOPYRIGHT1
  */
 
 import React, {Component} from 'react';
 import {Platform, StyleSheet, Text, View} from 'react-native';
+
 import Wifi from "react-native-iot-wifi";
+ 
 
-const ssid = 'AOCARALLO_2';
-const passphase = 'A28042804a*';
 
-export default class App extends Component {
-  constructor(props) {
-    super(props);
-    this.state = {
-      isApiAvaliable: false,
-      ssid: '',
-      connected: false,
-      error: null
-    };
-    
-    this.testWifi();
-  }
+Wifi.isAvaliable((avaliable) => {
+  console.warn(avaliable ? 'avaliable' : 'failed');
+});
+ 
+// Wifi.getSSID((SSID) => {
+//   console.warn(SSID);
+// });
+ 
+// Wifi.connect("wifi-name", (error) => {
+//   console.warn(error ? 'error: ' + error : 'connected to wifi-name');
+// });
+ 
+// Wifi.removeSSID("wifi-name", (error)=>{
+//   console.warn(error ? 'error: ' + error : 'removed wifi-name');
+// });
 
+
+
+const instructions = Platform.select({
+  ios: 'Press Cmd+R to reload,\n' + 'Cmd+D or shake for dev menu',
+  android:
+    'Double tap R on your keyboard to reload,\n' +
+    'Shake or press menu button for dev menu',
+});
+
+type Props = {};
+export default class App extends Component<Props> {
   render() {
     return (
       <View style={styles.container}>
-        <Text style={styles.instructions}>{"\n"}
-        API avaliable: {this.state.isApiAvaliable ? "yes" : "no"} {"\n"}
-        ~{"\n"}
-        SSID: {this.state.ssid} {"\n"}
-        ~{"\n"}
-        Connected to {ssid}: {this.state.connected  ? "yes" : "no"} {"\n"}
-        Error: {this.state.error}{"\n"}
-        </Text>
+        <Text style={styles.welcome}>Welcome to React Native!</Text>
+        <Text style={styles.instructions}>To get started, edit App.js</Text>
+        <Text style={styles.instructions}>{instructions}</Text>
       </View>
     );
-  }
-
-  testWifi(){
-    Wifi.isAvaliable((avaliable) => {
-      
-      this.setState({isApiAvaliable: avaliable});
-      
-      if (!avaliable) {
-        return;
-      }
-
-      
-      Wifi.getSSID((SSID) => {
-        this.setState({ssid: SSID});
-      });
-
-      Wifi.connectSecure(ssid, passphase, false, (error) => {
-        this.setState({error: error});
-        this.setState({connected: error == null});
-        
-        Wifi.getSSID((SSID) => {
-          this.setState({ssid: SSID});
-        });
-      });
-      
-      // Wifi.connect(ssid, (error) => {
-      //   this.setState({error: error});
-      //   this.setState({connected: error == null});
-
-      //   Wifi.getSSID((SSID) => {
-      //     this.setState({ssid: SSID});
-      //   });
-
-        // Wifi.removeSSID(ssid, (error)=>{
-        //   this.setState({error: error});
-        // });
-      // });
-    });
   }
 }
 
@@ -84,7 +56,13 @@ const styles = StyleSheet.create({
   container: {
     flex: 1,
     justifyContent: 'center',
-    backgroundColor: '#54998E',
+    alignItems: 'center',
+    backgroundColor: '#F5FCFF',
+  },
+  welcome: {
+    fontSize: 20,
+    textAlign: 'center',
+    margin: 10,
   },
   instructions: {
     textAlign: 'center',
