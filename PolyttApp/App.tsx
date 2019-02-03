@@ -9,28 +9,8 @@
 
 import React, {Component} from 'react';
 import {Platform, StyleSheet, Text, View} from 'react-native';
-
-import Wifi from "react-native-iot-wifi";
+import ioTWifiScanner from './services/IotWifiScanner';
  
-
-
-Wifi.isAvaliable((avaliable) => {
-  console.warn(avaliable ? 'avaliable' : 'failed');
-});
- 
-// Wifi.getSSID((SSID) => {
-//   console.warn(SSID);
-// });
- 
-// Wifi.connect("wifi-name", (error) => {
-//   console.warn(error ? 'error: ' + error : 'connected to wifi-name');
-// });
- 
-// Wifi.removeSSID("wifi-name", (error)=>{
-//   console.warn(error ? 'error: ' + error : 'removed wifi-name');
-// });
-
-
 
 const instructions = Platform.select({
   ios: 'Press Cmd+R to reload,\n' + 'Cmd+D or shake for dev menu',
@@ -41,6 +21,13 @@ const instructions = Platform.select({
 
 type Props = {};
 export default class App extends Component<Props> {
+
+    
+  constructor(props) {
+    super(props);
+    ioTWifiScanner.init();
+  }
+
   render() {
     return (
       <View style={styles.container}>
