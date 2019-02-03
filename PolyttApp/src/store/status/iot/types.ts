@@ -4,10 +4,10 @@ export interface IotStatus {
     initialled: boolean,
     wifiAvailable: boolean,
     wifiConnected: boolean, 
-    wifiError: string,
+    wifiError: string | null,
     iotScanning: boolean, 
     iotConnected: boolean,
-    iotError: string,
+    iotError: string | null,
 }
   
 interface SetIotStatusAction {

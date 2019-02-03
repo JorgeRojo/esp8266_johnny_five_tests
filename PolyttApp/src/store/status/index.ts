@@ -2,6 +2,7 @@
 import { combineReducers } from 'redux'; 
 import iotReducer from './iot/reducers';  
 
-export default statusReducer = combineReducers({ 
+const statusReducer = combineReducers({ 
     iot: iotReducer, 
 });
+export default statusReducer;

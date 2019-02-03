@@ -1,6 +1,5 @@
 import { applyMiddleware, createStore } from "redux"; 
-import { AsyncStorage } from 'react-native'; 
-import FilesystemStorage from 'redux-persist-filesystem-storage';  
+import { AsyncStorage } from 'react-native';  
 import { persistStore } from 'redux-persist'; 
 import thunkMiddleware from "redux-thunk"; 
 import { composeWithDevTools } from "redux-devtools-extension";
