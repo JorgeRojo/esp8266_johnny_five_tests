@@ -1,26 +1,37 @@
-import React, {Component} from "react";     
-import {StyleSheet, Text, View} from 'react-native'; 
+import React, { PureComponent } from "react";
+import { bindActionCreators, Dispatch } from "redux";
+import { connect } from "react-redux";
+import Types from 'Types'; 
+import iotScanner from "~/services/IotScanner";
+import * as iotActions from "~/store/status/iot/actions";
+
+import Home from "./Home";
  
-export default class Home extends Component {  
-    render() {
-        return (  
-            <View style={styles.wrapper}>
-                <Text style={styles.text}>Welcome!</Text> 
-            </View> 
+class HomeContainer extends PureComponent {   
+    
+    componentWillMount() { 
+        iotScanner.init();
+    }
+
+    render() {   
+        const { iot } = this.props;  
+        return (
+            <Home iot={iot}/>
         );
     }
 } 
 
-const styles = StyleSheet.create({
-    wrapper: {
-        flex: 1,
-        justifyContent: 'center',
-        alignItems: 'center',
-        backgroundColor: '#F5FCFF',
-    },
-    text: {
-        fontSize: 20,
-        textAlign: 'center',
-        margin: 10,
-    }, 
-});
+const mapStateToProps = ({status}: Types.RootState) => { 
+    return  ({
+        iot: status.iot
+    });
+}
+
+const mapDispatchToProps = (dispatch: Dispatch<Types.RootAction>) => (bindActionCreators({
+    setIotStatus: iotActions.setIotStatus
+}, dispatch));
+
+export default connect(
+    mapStateToProps,
+    mapDispatchToProps
+)(HomeContainer);

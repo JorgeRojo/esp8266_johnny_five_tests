@@ -11,19 +11,19 @@ const initialState: IotStatus = {
     initialled: false,
     wifiAvailable: false,
     wifiConnected: false,
-    wifiError: null,
+    wifiError: false,
     iotScanning: false,
     iotConnected: false,
-    iotError: null,
+    iotError: false,
 };
 
 const iotStatusPersistsConfig = {
     key: 'PolyttApp:IotStatus',
     storage: FilesystemStorage,
     whitelist: [
-        'initialled',
     ],
     blacklist: [
+        'initialled',
         'wifiAvailable',
         'wifiConnected',
         'wifiError',
