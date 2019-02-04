@@ -4,21 +4,34 @@ import { setIotStatus } from "~/store/status/iot/actions";
 
 class IotScanner   { 
 
+<<<<<<< HEAD
     private ssid: string = '';
 
     async init() { 
         
         this.ssid = '';
+=======
+    ssid: string = '';
+
+    async init() { 
+        
+>>>>>>> cb7b82a499c3d72b956eb2f437339fd6072e793d
         store.dispatch(setIotStatus({ initialled: true }));
 
         const wifiAvailable = await this.isAvailable();
         store.dispatch(setIotStatus({ wifiAvailable }));
 
+<<<<<<< HEAD
         if(wifiAvailable) { 
             this.ssid = await this.getSSID();
         }
 
         if(!this.ssid) { 
+=======
+        const ssid = await this.getSSID();
+
+        if(!ssid) { 
+>>>>>>> cb7b82a499c3d72b956eb2f437339fd6072e793d
             store.dispatch(setIotStatus({ wifiError: true}));  
         }
         else {
