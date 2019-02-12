@@ -3,3 +3,5 @@ dist
 .vscode
 app/android/app/src/main/java/host/exp/exponent/MainActivity.java
 ___*
+
+*.DS_Store
