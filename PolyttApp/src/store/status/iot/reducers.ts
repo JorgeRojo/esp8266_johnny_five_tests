@@ -9,12 +9,13 @@ import {
  
 const initialState: IotStatus = {
     initialled: false,
-    wifiAvailable: false,
-    wifiConnected: false,
+    wifiAvailable: false, 
     wifiError: false,
-    iotScanning: false,
-    iotConnected: false,
-    iotError: false,
+    iotScanning: false, 
+    iotScanningError: false, 
+    iotConnected: false, 
+    iotWifiConnectingError: false,
+    iotWifiConnecting: false,
 };
 
 const iotStatusPersistsConfig = {
@@ -22,14 +23,15 @@ const iotStatusPersistsConfig = {
     storage: FilesystemStorage,
     whitelist: [
     ],
-    blacklist: [
+    blacklist: [ 
         'initialled',
-        'wifiAvailable',
-        'wifiConnected',
+        'wifiAvailable', 
         'wifiError',
-        'iotScanning',
-        'iotConnected',
-        'iotError',
+        'iotScanning', 
+        'iotScanningError', 
+        'iotConnected', 
+        'iotWifiConnectingError',
+        'iotWifiConnecting',
     ],
 };
 

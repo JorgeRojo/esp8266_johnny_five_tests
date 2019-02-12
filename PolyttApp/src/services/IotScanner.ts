@@ -6,40 +6,52 @@ class IotScanner   {
 
     private ssid: string = '';
 
-    async init() { 
-        
+    async init() {
+
         this.ssid = '';
-        store.dispatch(setIotStatus({ initialled: true }));
 
         const wifiAvailable = await this.isAvailable();
-        store.dispatch(setIotStatus({ wifiAvailable }));
+     
 
-        if(wifiAvailable) { 
+        if (wifiAvailable) {
             this.ssid = await this.getSSID();
-        }
+        }    
+        
+        store.dispatch(setIotStatus({ 
+            initialled: true,
+            wifiAvailable,
+            wifiError: !this.ssid,
+            iotScanning: !!this.ssid,
+        })); 
 
-        if(!this.ssid) { 
-            store.dispatch(setIotStatus({ wifiError: true}));  
+        if (this.ssid) { 
+            this.scanIot() 
         }
-        else {
-            store.dispatch(setIotStatus({ wifiConnected: true}));
-            //TODO... continue flow -> scan iots
-        }      
-
-        store.dispatch(setIotStatus({ initialled: false }));
+ 
 
     }
-       
+
+
+    private scanIot = async () => {
+        let iotExsits = this.ssid;
+        
+        iotExsits = await this.connectSecure('sssadasdds', 'A28042804a*');
+        console.warn('>>>>------------> iotExsits', iotExsits);
+        iotExsits = await this.connectSecure('sssasdasdads', 'A28042804a*');
+        console.warn('>>>>------------> iotExsits', iotExsits);
+        iotExsits = await this.connectSecure('sssasdadads', 'A28042804a*');
+        console.warn('>>>>------------> iotExsits', iotExsits);
+        iotExsits = await this.connectSecure('sssasdsaads', 'A28042804a*');
+        console.warn('>>>>------------> iotExsits', iotExsits);
+    }
+ 
     private isAvailable = () => new Promise((resolve) => {
         Wifi.isAvaliable(resolve);
     })
 
     private getSSID = () => new Promise((resolve) => {
         Wifi.getSSID(resolve); 
-    })
-
-    private scanIots = () => { 
-    }
+    }) 
  
     private connect = (ssid) => new Promise((resolve, reject) => { 
         Wifi.connect(ssid, (error) => {
@@ -52,8 +64,8 @@ class IotScanner   {
         }); 
     })
 
-    private connectSecure = (ssid, password) => new Promise((resolve, reject) => {
-        Wifi.connectSecure(ssid, password, (error) => {
+    private connectSecure = (ssid: string, password: string) => new Promise((resolve, reject) => {
+        Wifi.connectSecure(ssid, password, false, (error: any) => {
             if(error) {
                 reject(error);
             }
