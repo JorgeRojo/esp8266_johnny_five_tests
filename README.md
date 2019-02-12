@@ -6,8 +6,3 @@
 ## dependencies
 - [react-native-iot-wifi](https://www.npmjs.com/package/react-native-iot-wifi)
 
-## Debug android remotely
-- [Configure on-device developer options](https://developer.android.com/studio/debug/dev-options?hl=en-419)
-- ``adb devices`` to get list of connected devices
-- ``adb -s {device id/name} reverse tcp:8081 tcp:8081`` to link your device with DevTools
-- ``adb shell input keyevent 82`` to open dev menu in the device
