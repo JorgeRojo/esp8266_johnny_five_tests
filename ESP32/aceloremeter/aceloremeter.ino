@@ -1,5 +1,6 @@
 #include "I2Cdev.h"
 #include "MPU6050_6Axis_MotionApps20.h"
+#include "Wire.h"
 #include <EEPROM.h> 
 #include <EEPROMAnything.h> 
 
@@ -13,7 +14,7 @@ void setup()
 
 	pinMode(LED, OUTPUT);
 	pinMode(INTERRUPT_PIN, INPUT);
-  
+ 
 	mpuSetup();
 }
 
@@ -70,10 +71,10 @@ int giro_deadzone = 1; //Giro error allowed, make it lower to get more precision
 
 int16_t ax, ay, az, gx, gy, gz;
 int mean_ax, mean_ay, mean_az, mean_gx, mean_gy, mean_gz, state = 0;
-int ax_offset, ay_offset, az_offset, gx_offset, gy_offset, gz_offset;
+int ax_offset, ay_offset, az_offset, gx_offset, gy_offset, gz_offset = 0;
 
 volatile bool mpuInterrupt = false;
- 
+
 typedef struct
 {
   bool saved; 
@@ -86,21 +87,9 @@ typedef struct
 } Calibration;
 
 Calibration calibration;
-  
+
 void mpuSetup()
 {
-	EEPROM.begin(256);
-  
-
-	// ---- RESET STORAGE ---- 
-	// EEPROM_readAnything(0, calibration);  
-	// Serial.print("saved ");
-	// Serial.println(saved);  
-	// saved = false; 
-	// EEPROM_writeAnything(0, calibration);
-	// EEPROM.commit();
-	 
-
 
 	// join I2C bus (I2Cdev library doesn't do this automatically)
 	#if I2CDEV_IMPLEMENTATION == I2CDEV_ARDUINO_WIRE
@@ -108,7 +97,7 @@ void mpuSetup()
 		Wire.setClock(400000); // 400kHz I2C clock. Comment this line if having compilation difficulties
 	#elif I2CDEV_IMPLEMENTATION == I2CDEV_BUILTIN_FASTWIRE
 		Fastwire::setup(400, true);
-	#endif
+	#endif 
 
 	// initialize device
 	mpu.initialize();
@@ -127,14 +116,14 @@ void mpuSetup()
 	Serial.println(F("Initializing DMP..."));
 	devStatus = mpu.dmpInitialize();
 
-	// reset offsets 
+	// reset offsets
 	mpu.setXAccelOffset(0);
 	mpu.setYAccelOffset(0);
 	mpu.setZAccelOffset(0);
 	mpu.setXGyroOffset(0);
 	mpu.setYGyroOffset(0);
-	mpu.setZGyroOffset(0);  
- 
+	mpu.setZGyroOffset(0);
+
 	// Activar DMP
 	if (devStatus == 0)
 	{
@@ -163,6 +152,33 @@ void mpuSetup()
 	}
 }
 
+void _storeConfig() {
+	 
+	// EEPROM.begin(256);
+	calibration.saved = true;
+	calibration.ax_offset = -2122;
+	calibration.ay_offset = -413;
+	calibration.az_offset = 1225;
+	calibration.gx_offset = (int)gx_offset; // Double.valueOf(gx_offset).intValue();
+	calibration.gy_offset = 0;
+	calibration.gz_offset = 0;
+	EEPROM_writeAnything(0, calibration); 
+	EEPROM.commit(); 
+
+	Serial.println("Calibration saved!");
+	Serial.print(calibration.ax_offset);
+	Serial.print("\t");
+	Serial.print(calibration.ay_offset);
+	Serial.print("\t");
+	Serial.print(calibration.az_offset);
+	Serial.print("\t");
+	Serial.print(calibration.gx_offset);
+	Serial.print("\t");
+	Serial.print(calibration.gy_offset);
+	Serial.print("\t");
+	Serial.println(calibration.gz_offset);
+}
+
 void mpuLoop()
 {
 	// Si fallo al iniciar, parar programa
@@ -176,7 +192,11 @@ void mpuLoop()
 	if (state == 0)
 	{
 		Serial.println("\nReading sensors for first time...");
-		_mpuMeansensors();
+		_mpuMeansensors(); 
+		
+		// initialize storage
+		EEPROM.begin(256);
+		EEPROM_readAnything(0, calibration); 
 
 		_blink();
 		state++;
@@ -186,10 +206,25 @@ void mpuLoop()
 	if (state == 1)
 	{
 		Serial.println("\nCalculating offsets...");
-		_mpuCalibration();
 
+		calibration.saved = false;
+		if (!calibration.saved)
+		{ 
+			_mpuCalibration();
+			_storeConfig();
+		}
+		else {
+			ax_offset = calibration.ax_offset; 
+			ay_offset = calibration.ay_offset; 
+			az_offset = calibration.az_offset; 
+			gx_offset = calibration.gx_offset; 
+			gy_offset = calibration.gy_offset; 
+			gz_offset = calibration.gz_offset; 
+			Serial.println("Calibration recovered from storage!"); 
+		}
+
+		state++; 
 		_blink();
-		state++;
 		delay(500);
 	}
 
@@ -276,15 +311,15 @@ void mpuLoop()
 			fifoCount -= packetSize;
 
 			// MMostrar Yaw, Pitch, Roll
-			mpu.dmpGetQuaternion(&q, fifoBuffer);
-			mpu.dmpGetGravity(&gravity, &q);
-			mpu.dmpGetYawPitchRoll(ypr, &q, &gravity);
-			Serial.print("ypr\t");
-			Serial.print(ypr[0] * 180 / M_PI);
-			Serial.print("\t");
-			Serial.print(ypr[1] * 180 / M_PI);
-			Serial.print("\t");
-			Serial.println(ypr[2] * 180 / M_PI);
+			// mpu.dmpGetQuaternion(&q, fifoBuffer);
+			// mpu.dmpGetGravity(&gravity, &q);
+			// mpu.dmpGetYawPitchRoll(ypr, &q, &gravity);
+			// Serial.print("ypr\t");
+			// Serial.print(ypr[0] * 180 / M_PI);
+			// Serial.print("\t");
+			// Serial.print(ypr[1] * 180 / M_PI);
+			// Serial.print("\t");
+			// Serial.println(ypr[2] * 180 / M_PI);
 
 			//Mostrar aceleracion
 			// mpu.dmpGetQuaternion(&q, fifoBuffer);
@@ -343,96 +378,60 @@ void _mpuMeansensors()
 }
 
 void _mpuCalibration()
-{ 
-	EEPROM_readAnything(0, calibration); 
-	if(!calibration.saved) {
+{
+	ax_offset = -mean_ax / 8;
+	ay_offset = -mean_ay / 8;
+	az_offset = (16384 - mean_az) / 8;
 
-		ax_offset = -mean_ax / 8;
-		ay_offset = -mean_ay / 8;
-		az_offset = (16384 - mean_az) / 8; 
-		gx_offset = -mean_gx / 4;
-		gy_offset = -mean_gy / 4;
-		gz_offset = -mean_gz / 4; 
-		
-		while (1)
-		{
-			int ready = 0;
-			mpu.setXAccelOffset(ax_offset);
-			mpu.setYAccelOffset(ay_offset);
-			mpu.setZAccelOffset(az_offset); 
-			mpu.setXGyroOffset(gx_offset);
-			mpu.setYGyroOffset(gy_offset);
-			mpu.setZGyroOffset(gz_offset);
+	gx_offset = -mean_gx / 4;
+	gy_offset = -mean_gy / 4;
+	gz_offset = -mean_gz / 4;
+	while (1)
+	{
+		int ready = 0;
+		mpu.setXAccelOffset(ax_offset);
+		mpu.setYAccelOffset(ay_offset);
+		mpu.setZAccelOffset(az_offset);
 
-			_mpuMeansensors();
-			Serial.println("...");
+		mpu.setXGyroOffset(gx_offset);
+		mpu.setYGyroOffset(gy_offset);
+		mpu.setZGyroOffset(gz_offset);
 
-			if (abs(mean_ax) <= acel_deadzone)
-				ready++;
-			else
-				ax_offset = ax_offset - mean_ax / acel_deadzone;
+		_mpuMeansensors();
+		Serial.println("...");
 
-			if (abs(mean_ay) <= acel_deadzone)
-				ready++;
-			else
-				ay_offset = ay_offset - mean_ay / acel_deadzone;
+		if (abs(mean_ax) <= acel_deadzone)
+			ready++;
+		else
+			ax_offset = ax_offset - mean_ax / acel_deadzone;
 
-			if (abs(16384 - mean_az) <= acel_deadzone)
-				ready++;
-			else
-				az_offset = az_offset + (16384 - mean_az) / acel_deadzone;
+		if (abs(mean_ay) <= acel_deadzone)
+			ready++;
+		else
+			ay_offset = ay_offset - mean_ay / acel_deadzone;
 
-			if (abs(mean_gx) <= giro_deadzone)
-				ready++;
-			else
-				gx_offset = gx_offset - mean_gx / (giro_deadzone + 1);
+		if (abs(16384 - mean_az) <= acel_deadzone)
+			ready++;
+		else
+			az_offset = az_offset + (16384 - mean_az) / acel_deadzone;
 
-			if (abs(mean_gy) <= giro_deadzone)
-				ready++;
-			else
-				gy_offset = gy_offset - mean_gy / (giro_deadzone + 1);
+		if (abs(mean_gx) <= giro_deadzone)
+			ready++;
+		else
+			gx_offset = gx_offset - mean_gx / (giro_deadzone + 1);
 
-			if (abs(mean_gz) <= giro_deadzone)
-				ready++;
-			else
-				gz_offset = gz_offset - mean_gz / (giro_deadzone + 1);
+		if (abs(mean_gy) <= giro_deadzone)
+			ready++;
+		else
+			gy_offset = gy_offset - mean_gy / (giro_deadzone + 1);
 
-			if (ready == 6)
-				break;
-		}  
+		if (abs(mean_gz) <= giro_deadzone)
+			ready++;
+		else
+			gz_offset = gz_offset - mean_gz / (giro_deadzone + 1);
 
-		Serial.print("Your offsets:\t");
-		Serial.print(ax_offset);
-		Serial.print("\t");
-		Serial.print(ay_offset);
-		Serial.print("\t");
-		Serial.print(az_offset);
-		Serial.print("\t");
-		Serial.print(gx_offset);
-		Serial.print("\t");
-		Serial.print(gy_offset);
-		Serial.print("\t");
-		Serial.println(gz_offset);
-
-		calibration.saved = true; 
-		calibration.ax_offset = ax_offset; 
-		calibration.ay_offset = ay_offset; 
-		calibration.az_offset = az_offset; 
-		calibration.gx_offset = gx_offset; 
-		calibration.gy_offset = gy_offset; 
-		calibration.gz_offset = gz_offset;  
-		EEPROM_writeAnything(0, calibration);
-		EEPROM.commit();
-		Serial.println("Calibration saved!");
-	}
-	else {
-		ax_offset = calibration.ax_offset; 
-		ay_offset = calibration.ay_offset; 
-		az_offset = calibration.az_offset; 
-		gx_offset = calibration.gx_offset; 
-		gy_offset = calibration.gy_offset; 
-		gz_offset = calibration.gz_offset; 
-		Serial.println("Calibration recovered from storage!"); 
+		if (ready == 6)
+			break;
 	}
 }
 
