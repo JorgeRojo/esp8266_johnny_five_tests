@@ -1,8 +1,7 @@
 #include "I2Cdev.h"
 #include "MPU6050_6Axis_MotionApps20.h"
 #include "Wire.h"
-#include <EEPROM.h> 
-#include <EEPROMAnything.h> 
+#include <EEPROM.h>  
 
 #define INTERRUPT_PIN 32
 #define LED 2
@@ -86,7 +85,6 @@ typedef struct
   int gz_offset; 
 } Calibration;
 
-Calibration calibration;
 
 void mpuSetup()
 {
@@ -152,32 +150,60 @@ void mpuSetup()
 	}
 }
 
-void _storeConfig() {
-	 
-	// EEPROM.begin(256);
+void _storeCalibration() 
+{
+	  
+  Calibration calibration;
 	calibration.saved = true;
-	calibration.ax_offset = -2122;
-	calibration.ay_offset = -413;
-	calibration.az_offset = 1225;
-	calibration.gx_offset = (int)gx_offset; // Double.valueOf(gx_offset).intValue();
-	calibration.gy_offset = 0;
-	calibration.gz_offset = 0;
-	EEPROM_writeAnything(0, calibration); 
-	EEPROM.commit(); 
+	// calibration.ax_offset = ax_offset;
+	// calibration.ay_offset = ay_offset;
+	// calibration.az_offset = az_offset;
+	// calibration.gx_offset = gx_offset;
+	// calibration.gy_offset = gy_offset;
+	// calibration.gz_offset = gz_offset;  
 
-	Serial.println("Calibration saved!");
-	Serial.print(calibration.ax_offset);
-	Serial.print("\t");
-	Serial.print(calibration.ay_offset);
-	Serial.print("\t");
-	Serial.print(calibration.az_offset);
-	Serial.print("\t");
-	Serial.print(calibration.gx_offset);
-	Serial.print("\t");
-	Serial.print(calibration.gy_offset);
-	Serial.print("\t");
-	Serial.println(calibration.gz_offset);
+	Serial.println("Calibration saved!"); 
+	_storeStruct(&calibration, sizeof(calibration));
 }
+
+void _storeStruct(void *data_source, size_t size)
+{
+	EEPROM.begin(size * 2);
+	for (size_t i = 0; i < size; i++)
+	{
+		char data = ((char *)data_source)[i];
+		EEPROM.write(i, data);
+	}
+	EEPROM.commit();
+}
+
+void _loadStruct(void *data_dest, size_t size)
+{
+	EEPROM.begin(size * 2);
+	for (size_t i = 0; i < size; i++)
+	{
+		char data = EEPROM.read(i);
+		((char *)data_dest)[i] = data;
+	}
+}
+
+//void __printStore(&calibration)
+//{
+//	Serial.print("Saved: ");
+//	Serial.print(calibration.saved);
+//	Serial.print("\t");
+//	Serial.print(calibration.ax_offset);
+//	Serial.print("\t");
+//	Serial.print(calibration.ay_offset);
+//	Serial.print("\t");
+//	Serial.print(calibration.az_offset);
+//	Serial.print("\t");
+//	Serial.print(calibration.gx_offset);
+//	Serial.print("\t");
+//	Serial.print(calibration.gy_offset);
+//	Serial.print("\t");
+//	Serial.println(calibration.gz_offset);
+//} 
 
 void mpuLoop()
 {
@@ -185,18 +211,12 @@ void mpuLoop()
 	if (!dmpReady)
 	{
 		return;
-	}
-
-	//  digitalWrite(LED, HIGH);
+	} 
 
 	if (state == 0)
 	{
-		Serial.println("\nReading sensors for first time...");
-		_mpuMeansensors(); 
-		
-		// initialize storage
-		EEPROM.begin(256);
-		EEPROM_readAnything(0, calibration); 
+		Serial.println("\nReading sensors and setore...");
+		_mpuMeansensors();  
 
 		_blink();
 		state++;
@@ -207,11 +227,14 @@ void mpuLoop()
 	{
 		Serial.println("\nCalculating offsets...");
 
+    Calibration calibration;
+    _loadStruct(&calibration, sizeof(calibration));
+    
 		calibration.saved = false;
 		if (!calibration.saved)
 		{ 
 			_mpuCalibration();
-			_storeConfig();
+			_storeCalibration();
 		}
 		else {
 			ax_offset = calibration.ax_offset; 
