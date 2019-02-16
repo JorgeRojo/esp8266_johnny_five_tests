@@ -1,39 +1,111 @@
 #include "I2Cdev.h"
 #include "MPU6050_6Axis_MotionApps20.h"
 #include "Wire.h"
-#include <EEPROM.h>  
-
-#define INTERRUPT_PIN 32
+#include <EEPROM.h>   
+#include <./EEPROMAnything.h>  
+ 
 #define LED 2
  
-
 void setup()
 {
-	Serial.begin(115200);
+	Serial.begin(115200); 
+	pinMode(LED, OUTPUT); 
+   
+	_loadStorage(); 
 
-	pinMode(LED, OUTPUT);
-	pinMode(INTERRUPT_PIN, INPUT);
- 
-	mpuSetup();
+	//reset storage
+	//storage.calibration_saved = 0;
+
+	mpuSetup(); 
 }
 
+int counter = 0;
 void loop()
-{
+{     
 	mpuLoop();
 }
 
-void _blink()
+
+
+#pragma region ////// STORAGE //////
+typedef struct
 {
-	int i;
-	for (i = 0; i < 10; i = i + 1)
-	{
-		delay(100);
-		digitalWrite(LED, (i % 2 != 0) ? HIGH : LOW);
-	}
+
+  int calibration_saved; 
+  int ax_offset; 
+  int ay_offset;
+  int az_offset; 
+  int gx_offset; 
+  int gy_offset; 
+  int gz_offset; 
+
+} Store_t;
+
+Store_t storage;
+
+void _saveStorage()
+{ 
+	size_t size = sizeof(storage); 
+	EEPROM.begin(size * 2);
+
+	EEPROM_writeAnything(0, storage);
+	EEPROM.commit();
 }
 
-///////////////////////////////////  MPU  ////////////////////////////////////
-#pragma region
+void _loadStorage()
+{
+	size_t size = sizeof(storage); 
+	EEPROM.begin(size * 2);
+	
+	EEPROM_readAnything(0, storage);
+} 
+
+void _saveCalibration() 
+{
+	storage.calibration_saved = 1; 
+	Serial.println("Calibration saving... \t");   
+	Serial.print(storage.calibration_saved); 
+	Serial.print(" |\t");
+	Serial.print(storage.ax_offset);
+	Serial.print("\t");
+	Serial.print(storage.ay_offset);
+	Serial.print("\t");
+	Serial.print(storage.az_offset);
+	Serial.print("\t");
+	Serial.print(storage.gx_offset);
+	Serial.print("\t");
+	Serial.print(storage.gy_offset);
+	Serial.print("\t");
+	Serial.println(storage.gz_offset);
+	 
+	_saveStorage();
+	Serial.println("Calibration saved!"); 
+}
+
+void __printStore()
+{ 
+	_loadStorage();
+	Serial.print("Saved: \t");
+	Serial.print(storage.calibration_saved); 
+	Serial.print(" |\t");
+	Serial.print(storage.ax_offset);
+	Serial.print("\t");
+	Serial.print(storage.ay_offset);
+	Serial.print("\t");
+	Serial.print(storage.az_offset);
+	Serial.print("\t");
+	Serial.print(storage.gx_offset);
+	Serial.print("\t");
+	Serial.print(storage.gy_offset);
+	Serial.print("\t");
+	Serial.println(storage.gz_offset);
+} 
+
+
+#pragma endregion
+
+
+#pragma region ///////  MPU ///////
 //GND - GND
 //VCC - VCC
 //SDA - Pin D21
@@ -71,20 +143,7 @@ int giro_deadzone = 1; //Giro error allowed, make it lower to get more precision
 int16_t ax, ay, az, gx, gy, gz;
 int mean_ax, mean_ay, mean_az, mean_gx, mean_gy, mean_gz, state = 0;
 int ax_offset, ay_offset, az_offset, gx_offset, gy_offset, gz_offset = 0;
-
-volatile bool mpuInterrupt = false;
-
-typedef struct
-{
-  bool saved; 
-  int ax_offset; 
-  int ay_offset;
-  int az_offset; 
-  int gx_offset; 
-  int gy_offset; 
-  int gz_offset; 
-} Calibration;
-
+ 
 
 void mpuSetup()
 {
@@ -99,12 +158,8 @@ void mpuSetup()
 
 	// initialize device
 	mpu.initialize();
-
-	// start message
-	Serial.println("\nMPU6050 Calibration Sketch");
-	delay(500);
-	Serial.println("\nYour MPU6050 should be placed in horizontal position, with package letters facing up. \nDon't touch it until you see a finish message.\n");
-	delay(500);
+	 
+ 
 
 	// Comprobar  conexion
 	Serial.println(F("Testing device connections..."));
@@ -122,88 +177,36 @@ void mpuSetup()
 	mpu.setYGyroOffset(0);
 	mpu.setZGyroOffset(0);
 
-	// Activar DMP
-	if (devStatus == 0)
-	{
-		Serial.println(F("Enabling DMP..."));
-		mpu.setDMPEnabled(true);
 
-		// Activar interrupcion
-		attachInterrupt(digitalPinToInterrupt(INTERRUPT_PIN), _dmpDataReady, RISING);
-		mpuIntStatus = mpu.getIntStatus();
+		// Enabling DMP
+		if (devStatus == 0)
+		{
+			Serial.println(F("Enabling DMP..."));
+			mpu.setDMPEnabled(true);
+ 
+			mpuIntStatus = mpu.getIntStatus();
+ 
+			dmpReady = true;
 
-		Serial.println(F("DMP ready! Waiting for first interrupt..."));
-		dmpReady = true;
-
-		// get expected DMP packet size for later comparison
-		packetSize = mpu.dmpGetFIFOPacketSize();
-	}
-	else
-	{
-		// ERROR!
-		// 1 = initial memory load failed
-		// 2 = DMP configuration updates failed
-		// (if it's going to break, usually the code will be 1)
-		Serial.print(F("DMP Initialization failed (code "));
-		Serial.print(devStatus);
-		Serial.println(F(")"));
-	}
+			// get expected DMP packet size for later comparison
+			packetSize = mpu.dmpGetFIFOPacketSize(); 
+		}
+		else
+		{
+			// ERROR!
+			// 1 = initial memory load failed
+			// 2 = DMP configuration updates failed
+			// (if it's going to break, usually the code will be 1)
+			Serial.print(F("DMP Initialization failed (code "));
+			Serial.print(devStatus);
+			Serial.println(F(")")); 
+		}
+	
+ 
 }
 
-void _storeCalibration() 
-{
-	  
-  Calibration calibration;
-	calibration.saved = true;
-	// calibration.ax_offset = ax_offset;
-	// calibration.ay_offset = ay_offset;
-	// calibration.az_offset = az_offset;
-	// calibration.gx_offset = gx_offset;
-	// calibration.gy_offset = gy_offset;
-	// calibration.gz_offset = gz_offset;  
+//1 |	-2152	-411	1222	71	-1	-4
 
-	Serial.println("Calibration saved!"); 
-	_storeStruct(&calibration, sizeof(calibration));
-}
-
-void _storeStruct(void *data_source, size_t size)
-{
-	EEPROM.begin(size * 2);
-	for (size_t i = 0; i < size; i++)
-	{
-		char data = ((char *)data_source)[i];
-		EEPROM.write(i, data);
-	}
-	EEPROM.commit();
-}
-
-void _loadStruct(void *data_dest, size_t size)
-{
-	EEPROM.begin(size * 2);
-	for (size_t i = 0; i < size; i++)
-	{
-		char data = EEPROM.read(i);
-		((char *)data_dest)[i] = data;
-	}
-}
-
-//void __printStore(&calibration)
-//{
-//	Serial.print("Saved: ");
-//	Serial.print(calibration.saved);
-//	Serial.print("\t");
-//	Serial.print(calibration.ax_offset);
-//	Serial.print("\t");
-//	Serial.print(calibration.ay_offset);
-//	Serial.print("\t");
-//	Serial.print(calibration.az_offset);
-//	Serial.print("\t");
-//	Serial.print(calibration.gx_offset);
-//	Serial.print("\t");
-//	Serial.print(calibration.gy_offset);
-//	Serial.print("\t");
-//	Serial.println(calibration.gz_offset);
-//} 
 
 void mpuLoop()
 {
@@ -215,45 +218,38 @@ void mpuLoop()
 
 	if (state == 0)
 	{
-		Serial.println("\nReading sensors and setore...");
+		Serial.println("\nReading sensors...");
 		_mpuMeansensors();  
 
-		_blink();
 		state++;
-		delay(500);
+		_blink();  
 	}
 
 	if (state == 1)
 	{
-		Serial.println("\nCalculating offsets...");
 
-    Calibration calibration;
-    _loadStruct(&calibration, sizeof(calibration));
-    
-		calibration.saved = false;
-		if (!calibration.saved)
-		{ 
-			_mpuCalibration();
-			_storeCalibration();
+		if(storage.calibration_saved != 1) {
+			Serial.println("\nCalculating offsets..."); 
+			_mpuCalibration(); 
 		}
 		else {
-			ax_offset = calibration.ax_offset; 
-			ay_offset = calibration.ay_offset; 
-			az_offset = calibration.az_offset; 
-			gx_offset = calibration.gx_offset; 
-			gy_offset = calibration.gy_offset; 
-			gz_offset = calibration.gz_offset; 
-			Serial.println("Calibration recovered from storage!"); 
-		}
-
+			Serial.println("\nSetting offsets from storage..."); 
+			ax_offset = (int)storage.ax_offset;
+			ay_offset = (int)storage.ay_offset; 
+			az_offset = (int)storage.az_offset;
+			gx_offset = (int)storage.gx_offset;
+			gy_offset = (int)storage.gy_offset;
+			gz_offset = (int)storage.gz_offset; 
+		} 
+  
 		state++; 
-		_blink();
-		delay(500);
+		_blink();  
 	}
 
 	if (state == 2)
 	{
 		_mpuMeansensors();
+
 		Serial.println("\nFINISHED!");
 		Serial.print("\nSensor readings with offsets:\t");
 		Serial.print(mean_ax);
@@ -291,23 +287,35 @@ void mpuLoop()
 		mpu.setXGyroOffset(gx_offset);
 		mpu.setYGyroOffset(gy_offset);
 		mpu.setZGyroOffset(gz_offset);
+  
 
 		_blink();
-		digitalWrite(LED, LOW);
-		state++;
-		delay(500);
+		state++; 
 	}
+
 
 	if (state == 3)
 	{
+		// Saving calibration
+		if(storage.calibration_saved != 1) {
+			storage.ax_offset = ax_offset;
+			storage.ay_offset = ay_offset;
+			storage.az_offset = az_offset;
+			storage.gx_offset = gx_offset;
+			storage.gy_offset = gy_offset;
+			storage.gz_offset = gz_offset; 
+			_saveCalibration();
+		}  
+ 
+		_blink();
+		state++; 
+	}
 
-		// Ejecutar mientras no hay interrupcion
-		while (!mpuInterrupt && fifoCount < packetSize)
-		{
-			// AQUI EL RESTO DEL CODIGO DE TU PROGRRAMA
-		}
 
-		mpuInterrupt = false;
+	if (state == 4)
+	{ 
+		digitalWrite(LED, LOW);
+   
 		mpuIntStatus = mpu.getIntStatus();
 
 		// Obtener datos del FIFO
@@ -317,11 +325,10 @@ void mpuLoop()
 		if ((mpuIntStatus & 0x10) || fifoCount == 1024)
 		{
 			mpu.resetFIFO();
-			//Serial.println(F("FIFO overflow!"));
+			Serial.println(F("FIFO overflow!"));
 		}
 		else if (mpuIntStatus & 0x02)
-		{
-
+		{ 
 			// wait for correct available data length, should be a VERY short wait
 			while (fifoCount < packetSize)
 				fifoCount = mpu.getFIFOCount();
@@ -333,18 +340,18 @@ void mpuLoop()
 			// (this lets us immediately read more without waiting for an interrupt)
 			fifoCount -= packetSize;
 
-			// MMostrar Yaw, Pitch, Roll
-			// mpu.dmpGetQuaternion(&q, fifoBuffer);
-			// mpu.dmpGetGravity(&gravity, &q);
-			// mpu.dmpGetYawPitchRoll(ypr, &q, &gravity);
-			// Serial.print("ypr\t");
-			// Serial.print(ypr[0] * 180 / M_PI);
-			// Serial.print("\t");
-			// Serial.print(ypr[1] * 180 / M_PI);
-			// Serial.print("\t");
-			// Serial.println(ypr[2] * 180 / M_PI);
+			//Mostrar Yaw, Pitch, Roll
+			mpu.dmpGetQuaternion(&q, fifoBuffer);
+			mpu.dmpGetGravity(&gravity, &q);
+			mpu.dmpGetYawPitchRoll(ypr, &q, &gravity);
+			Serial.print("ypr\t");
+			Serial.print(ypr[0] * 180 / M_PI);
+			Serial.print("\t");
+			Serial.print(ypr[1] * 180 / M_PI);
+			Serial.print("\t");
+			Serial.println(ypr[2] * 180 / M_PI);
 
-			//Mostrar aceleracion
+			// //Mostrar aceleracion
 			// mpu.dmpGetQuaternion(&q, fifoBuffer);
 			// mpu.dmpGetAccel(&aa, fifoBuffer);
 			// mpu.dmpGetGravity(&gravity, &q);
@@ -355,16 +362,19 @@ void mpuLoop()
 			// Serial.print(aaReal.y);
 			// Serial.print("\t");
 			// Serial.println(aaReal.z);
-
-			//      digitalWrite(LED, LOW);
-			//      delay(100);
+ 
 		}
 	}
 }
-
-void _dmpDataReady()
+   
+void _blink()
 {
-	mpuInterrupt = true;
+	int i;
+	for (i = 0; i < 10; i = i + 1)
+	{
+		delay(100);
+		digitalWrite(LED, (i % 2 != 0) ? HIGH : LOW);
+	}
 }
 
 void _mpuMeansensors()
