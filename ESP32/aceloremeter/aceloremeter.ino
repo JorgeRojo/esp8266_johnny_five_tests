@@ -2,13 +2,13 @@
 #include "MPU6050_6Axis_MotionApps20.h"
 #include "Wire.h"
 #include <EEPROM.h>   
-#include <./EEPROMAnything.h>  
+#include "./EEPROMAnything.h"  
  
 #define LED 2
  
 void setup()
 {
-	Serial.begin(115200); 
+	Serial.begin(9600); 
 	pinMode(LED, OUTPUT); 
    
 	_loadStorage(); 
