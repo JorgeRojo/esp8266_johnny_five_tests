@@ -2,19 +2,17 @@
 #include "MPU6050_6Axis_MotionApps20.h"
 #include "Wire.h"
 #include <EEPROM.h>   
-#include <./EEPROMAnything.h>  
+#include "./EEPROMAnything.h"  
  
 #define LED 2
  
 void setup()
 {
-	Serial.begin(115200); 
+	Serial.begin(9600); 
 	pinMode(LED, OUTPUT); 
    
 	_loadStorage(); 
 
-	//reset storage
-	//storage.calibration_saved = 0;
 
 	mpuSetup(); 
 }
@@ -46,18 +44,19 @@ Store_t storage;
 void _saveStorage()
 { 
 	size_t size = sizeof(storage); 
-	EEPROM.begin(size * 2);
-
+	EEPROM.begin(size * 2); 
 	EEPROM_writeAnything(0, storage);
 	EEPROM.commit();
 }
 
 void _loadStorage()
-{
+{  
 	size_t size = sizeof(storage); 
-	EEPROM.begin(size * 2);
-	
+	EEPROM.begin(size * 2); 
 	EEPROM_readAnything(0, storage);
+
+	// //reset storage
+	// storage.calibration_saved = 0;
 } 
 
 void _saveCalibration() 
@@ -234,12 +233,13 @@ void mpuLoop()
 		}
 		else {
 			Serial.println("\nSetting offsets from storage..."); 
-			ax_offset = (int)storage.ax_offset;
-			ay_offset = (int)storage.ay_offset; 
-			az_offset = (int)storage.az_offset;
-			gx_offset = (int)storage.gx_offset;
-			gy_offset = (int)storage.gy_offset;
-			gz_offset = (int)storage.gz_offset; 
+			ax_offset = storage.ax_offset;
+			ay_offset = storage.ay_offset; 
+			az_offset = storage.az_offset;
+			gx_offset = storage.gx_offset;
+			gy_offset = storage.gy_offset;
+			gz_offset = storage.gz_offset; 
+			delay(1000);
 		} 
   
 		state++; 
