@@ -4,6 +4,9 @@
 #include <EEPROM.h>
 #include "./EEPROMAnything.h" 
 
+#define PIN_LED 2
+#define PIN_BATTERY A0
+
 class Battery { 
 	private:
 		byte _pin;
@@ -21,38 +24,26 @@ class Battery {
 
 		float volt() {     
       		_raw = float(analogRead(this->_pin)); 
-			return (this->_max / this->_res) * (_raw / 1023);
+			return ((this->_max / this->_res) * (_raw / 1023)) * this->_res;
 		}  
 };
-
-#define LED 2
-
-Battery battery = Battery(A0, 4.17, 2) ;  
+ 
+Battery battery = Battery(PIN_BATTERY, 4.17, 2);  ;
 
 void setup()
 {
 	Serial.begin(9600);
-	pinMode(LED, OUTPUT); 
-	delay(200);
-
-	// loadStorage();
-
-	// mpuSetup();
+	pinMode(PIN_LED, OUTPUT);
+ 
+	loadStorage(); 
+	mpuSetup();
  
 }
 
 int counter = 0;
 void loop()
-{
-//  	Serial.print("Raw: ");
-//  	Serial.print(battery.raw());
-  	Serial.print("\t Volts: ");
-  	Serial.println(battery.volt()); 
-	  delay(200);
-
-
-	// mpuLoop(); 
-
+{  
+	mpuLoop();  
 }
 
 #pragma region ////// STORAGE //////
@@ -332,7 +323,7 @@ void mpuLoop()
 
 	if (state == 4)
 	{
-		digitalWrite(LED, LOW);
+		digitalWrite(PIN_LED, LOW);
 
 		mpuIntStatus = mpu.getIntStatus();
 
@@ -357,6 +348,12 @@ void mpuLoop()
 			// track FIFO count here in case there is > 1 packet available
 			// (this lets us immediately read more without waiting for an interrupt)
 			fifoCount -= packetSize;
+
+
+
+			Serial.print("\t Volts: ");
+			Serial.print(battery.volt());  
+			Serial.print("\t   ");
 
 			//Mostrar Yaw, Pitch, Roll
 			mpu.dmpGetQuaternion(&q, fifoBuffer);
@@ -390,7 +387,7 @@ void blink()
 	for (i = 0; i < 10; i = i + 1)
 	{
 		delay(100);
-		digitalWrite(LED, (i % 2 != 0) ? HIGH : LOW);
+		digitalWrite(PIN_LED, (i % 2 != 0) ? HIGH : LOW);
 	}
 }
 
