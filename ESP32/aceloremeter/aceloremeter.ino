@@ -3,31 +3,11 @@
 #include "Wire.h"
 #include <EEPROM.h>
 #include "./EEPROMAnything.h" 
+#include "./Battery.h" 
 
 #define PIN_LED 2
-#define PIN_BATTERY A0
+#define PIN_BATTERY A0 
 
-class Battery { 
-	private:
-		byte _pin;
-		unsigned int _raw;
-		float _max; 
-		float _res;
-
-	public:
-		Battery(byte pin, float batteryMaxVolt, float resistanceDivider) {
-			this->_pin = pin;
-			this->_max = batteryMaxVolt;
-			this->_res = resistanceDivider; 
-			pinMode(pin, INPUT);
-		} 
-
-		float volt() {     
-      		_raw = float(analogRead(this->_pin)); 
-			return ((this->_max / this->_res) * (_raw / 1023)) * this->_res;
-		}  
-};
- 
 Battery battery = Battery(PIN_BATTERY, 4.17, 2);  ;
 
 void setup()
@@ -44,6 +24,11 @@ int counter = 0;
 void loop()
 {  
 	mpuLoop();  
+
+	// Volts --------------------
+	Serial.print("\t Volts: ");
+	Serial.print(battery.volt());  
+	Serial.print("\t   ");
 }
 
 #pragma region ////// STORAGE //////
@@ -347,13 +332,7 @@ void mpuLoop()
 
 			// track FIFO count here in case there is > 1 packet available
 			// (this lets us immediately read more without waiting for an interrupt)
-			fifoCount -= packetSize;
-
-
-
-			Serial.print("\t Volts: ");
-			Serial.print(battery.volt());  
-			Serial.print("\t   ");
+			fifoCount -= packetSize; 
 
 			//Mostrar Yaw, Pitch, Roll
 			mpu.dmpGetQuaternion(&q, fifoBuffer);
