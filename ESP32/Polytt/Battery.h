@@ -15,7 +15,7 @@ class Battery {
 
 		float volt() {     
       		_raw = float(analogRead(this->_pin)); 
-			return ((this->_max / this->_res) * (_raw / 1023)) * this->_res;
+			return ((this->_max / this->_res) * (_raw / 1023));
 		}  
 };
  
