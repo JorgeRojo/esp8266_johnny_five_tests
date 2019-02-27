@@ -37,6 +37,22 @@ uint32_t value = 0;
 #define CHARACTERISTIC_UUID "19a09ba4-51f4-45eb-a2d9-bec08dad539e"
 
 
+class MyCallbacks: public BLECharacteristicCallbacks {
+    void onWrite(BLECharacteristic *pCharacteristic) {
+      std::string value = pCharacteristic->getValue();
+
+      if (value.length() > 0) {
+        Serial.println("*********");
+        Serial.print("New value: ");
+        for (int i = 0; i < value.length(); i++)
+          Serial.print(value[i]);
+
+        Serial.println();
+        Serial.println("*********");
+      }
+    }
+};
+
 class MyServerCallbacks: public BLEServerCallbacks {
     void onConnect(BLEServer* pServer) {
       deviceConnected = true;
@@ -45,7 +61,7 @@ class MyServerCallbacks: public BLEServerCallbacks {
 
     void onDisconnect(BLEServer* pServer) {
       deviceConnected = false;
-    }
+    }; 
 };
 
 
@@ -72,6 +88,8 @@ void setup() {
                       BLECharacteristic::PROPERTY_INDICATE
                     );
 
+  pCharacteristic->setCallbacks(new MyCallbacks());
+  
   // https://www.bluetooth.com/specifications/gatt/viewer?attributeXmlFile=org.bluetooth.descriptor.gatt.client_characteristic_configuration.xml
   // Create a BLE Descriptor
   pCharacteristic->addDescriptor(new BLE2902());
@@ -91,7 +109,7 @@ void setup() {
 void loop() {
     // notify changed value
     if (deviceConnected) {
-        pCharacteristic->setValue((uint8_t*)&value, 4);
+        pCharacteristic->setValue("Hello world");
         pCharacteristic->notify();
         value++;
         delay(200); // bluetooth stack will go into congestion, if too many packets are sent, in 6 hours test i was able to go as low as 3ms
