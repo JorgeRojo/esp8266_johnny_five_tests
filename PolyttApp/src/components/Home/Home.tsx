@@ -1,8 +1,10 @@
-import React, {Component} from "react";     
-import {StyleSheet, Text, View} from 'react-native';  
-import { Interface } from "readline";
+import React, {Component} from 'react';       
+import {StyleSheet, Text, View} from 'react-native';   
+import { IotStatus } from 'src/store/status/iot/types';
+ 
+import { HomeProps } from '.';
   
-export default class Home extends Component  {  
+export default class Home extends Component<HomeProps> {  
 
     get text() {
         const { iot } = this.props;

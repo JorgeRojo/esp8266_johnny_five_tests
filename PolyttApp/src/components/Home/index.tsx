@@ -1,33 +1,47 @@
-import React, { PureComponent } from "react";
 import { bindActionCreators, Dispatch } from "redux";
 import { connect } from "react-redux";
-import Types from 'Types'; 
-import iotScanner from "~/services/IotScanner";
+import { RootAction, RootState } from 'Types';
+
+import React, { PureComponent } from "react";
+import { PermissionsAndroid } from 'react-native'; 
+
+// import iotScanner from "~/services/IotScanner";
 import * as iotActions from "~/store/status/iot/actions";
+import { IotStatus } from "src/store/status/iot/types";
 
 import Home from "./Home";
  
-class HomeContainer extends PureComponent {   
-    
-    componentWillMount() { 
-        iotScanner.init();
+
+export interface HomeProps {
+    iot: IotStatus
+}
+ 
+
+class HomeContainer extends PureComponent<HomeProps>{
+
+    constructor(props: any) {
+        super(props);
+
     }
 
-    render() {   
-        const { iot } = this.props;  
+    componentWillMount() {
+        // iotScanner.init();  
+
+    }
+
+    render() {
+        const { iot } = this.props;
         return (
-            <Home iot={iot}/>
+            <Home iot={iot} />
         );
     }
-} 
-
-const mapStateToProps = ({status}: Types.RootState) => { 
-    return  ({
-        iot: status.iot
-    });
 }
 
-const mapDispatchToProps = (dispatch: Dispatch<Types.RootAction>) => (bindActionCreators({
+const mapStateToProps = ({ status }: RootState) => ({
+    iot: status.iot
+});
+
+const mapDispatchToProps = (dispatch: Dispatch<RootAction>) => (bindActionCreators({
     setIotStatus: iotActions.setIotStatus
 }, dispatch));
 
