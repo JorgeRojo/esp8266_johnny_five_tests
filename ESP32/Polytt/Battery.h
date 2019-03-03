@@ -16,6 +16,7 @@ class Battery {
 
     float level() {
       _raw = analogRead(this->_pin);
+      
       float level = (100 * _raw) / BATT_MAX_RAW;
 
       if ( this->_last < level && (level - this->_last) > 1 ) {

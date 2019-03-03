@@ -6,7 +6,6 @@
 //VCC - VCC
 //SDA - Pin D21
 //SCL - Pin D22
-//INT - Pin D7
 
 // class default I2C address is 0x68
 // specific I2C addresses may be passed as a parameter here
@@ -42,7 +41,7 @@ class Orientation {
     int giro_deadzone = 1; //Giro error allowed, make it lower to get more precision, but sketch may not converge  (default:1)
 
     int16_t ax, ay, az, gx, gy, gz;
-    int mean_ax, mean_ay, mean_az, mean_gx, mean_gy, mean_gz, state = 0;
+    int mean_ax, mean_ay, mean_az, mean_gx, mean_gy, mean_gz;
     int ax_offset, ay_offset, az_offset, gx_offset, gy_offset, gz_offset = 0;
 
     byte _pin_led;
@@ -316,6 +315,7 @@ class Orientation {
       this->storage = storage; 
     }
 
+    int state = 0;
     void setup () {
 
       pinMode(this->_pin_led, OUTPUT);
