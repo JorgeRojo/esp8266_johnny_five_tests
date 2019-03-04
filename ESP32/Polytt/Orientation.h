@@ -315,8 +315,9 @@ class Orientation {
       this->storage = storage;
     }
 
+    bool on = false;
     int state = 0;
-    void setup () {
+    void start () {
 
       pinMode(this->_pin_led, OUTPUT);
 
@@ -373,7 +374,7 @@ class Orientation {
         Serial.println(F(")"));
       }
 
-
+      this->on = true;
     }
 
     void loop () {

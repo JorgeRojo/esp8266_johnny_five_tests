@@ -33,7 +33,8 @@ void setup()
   bluetooth.start();
   delay(500);
 
-//  orientation.setup();
+
+  orientation.start();
   delay(500);
 
   //LEDS
@@ -48,31 +49,24 @@ void loop()
 {
 
   bluetooth.loop();
-//  orientation.loop();
-
-
-  if (!storage.data.wifi_connection_saved) {
 
 
 
+
+  orientation.loop();
+
+  char* face = orientation.get_polytt_face();
+  if ( face != "" && face != ant_face) {
+    Serial.print("FACE\t");
+    Serial.println(face);
+    ant_face = face;
   }
-  else {
 
-    bluetooth.stop();
-
-    char* face = orientation.get_polytt_face();
-    if ( face != "" && face != ant_face) {
-      Serial.print("FACE\t");
-      Serial.println(face);
-      ant_face = face;
-    }
-
-    //indicator
-    if (orientation.state >= 4) {
-      digitalWrite(PIN_LED_ON, HIGH);
-    }
-
+  //indicator
+  if (orientation.state >= 4) {
+    digitalWrite(PIN_LED_ON, HIGH);
   }
+
 
   //Battery level inidicators
   float batteryLevel = battery.level();
