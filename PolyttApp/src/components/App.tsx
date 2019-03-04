@@ -3,10 +3,20 @@
 import React, {Component} from "react"; 
 import { Provider } from "react-redux"; 
 import { PersistGate } from "redux-persist/es/integration/react"; 
-import { store, persistor } from "~/store"; 
-import Home from "~/components/Home";
+import { store, persistor } from "~/store";  
 import LoadSpinner from "~/components/LoadSpinner"; 
 import { Platform, TouchableWithoutFeedback, Text, StyleSheet } from "react-native"; 
+
+import { BleManager, Device } from 'react-native-ble-plx';
+import utf8 from 'utf8';
+import base64 from 'base-64';
+import { clearScreenDown } from "readline";
+
+//import randomSentence from 'random-sentence'; 
+ 
+const SERVICE_UUID = "91e88e4d-66b6-40b7-aa14-d5af542a7f0b";
+const CHARACTERISTIC_UUID = "19a09ba4-51f4-45eb-a2d9-bec08dad539e";
+const DEVICE_NAME = "Polytt_9R4W7bvff9";
 
 
 
@@ -22,7 +32,7 @@ export default class App extends Component {
     }
 
     info = (str: String) => {
-        console.info('>>>>------------> BLE', str);
+        console.warn('>>>>------------> BLE', str);
     }
 
     error = (str: String) => {
@@ -43,14 +53,14 @@ export default class App extends Component {
         this.manager.startDeviceScan(null, null, (error, device) => {
 
             this.info("Scanning...");
-
+          
 
             if (error) {
                 this.error(error.message)
                 return
             }
 
-            if (device && (device.name === 'Polytt config')) {
+            if (device && (device.name === DEVICE_NAME)) {
                 this.info("Connecting to TI Sensor")
                 this.manager.stopDeviceScan()
                 device.connect()
@@ -80,11 +90,18 @@ export default class App extends Component {
         });
     }
 
-    sendMessage = () => {  
-        const text = randomSentence({words: 5});
-
+    sendMessage = () => {   
+ 
         if(this.device) {
-            this.device.writeCharacteristicWithoutResponseForService(SERVICE_UUID, CHARACTERISTIC_UUID, base64.encode(utf8.encode(text)));
+
+            this.device.writeCharacteristicWithoutResponseForService(SERVICE_UUID, CHARACTERISTIC_UUID, 
+                base64.encode(utf8.encode(JSON.stringify('wifi_ssid-1234-1234-1234-1234')))
+            );
+
+            this.device.writeCharacteristicWithoutResponseForService(SERVICE_UUID, CHARACTERISTIC_UUID, 
+                base64.encode(utf8.encode(JSON.stringify('wifi_password-1234-1234-1234-1234')))
+            );
+
         } 
     }
  

@@ -3,15 +3,24 @@
 
 typedef struct
 {
-  int calibration_saved;
+  
+  // orientation
+  bool calibration_saved;
   int ax_offset;
   int ay_offset;
   int az_offset;
   int gx_offset;
   int gy_offset;
   int gz_offset;
-
+  
+  // wifi
+  bool wifi_connection_saved;
+  char* wifi_ssid;
+  char* wifi_password;
+  
 } Storage_t;
+
+
 
 int EEPROM_writeAnything(int ee, const Storage_t &data)
 {
@@ -52,7 +61,7 @@ class Storage {
 
       // reset storage
       if (_reset) {
-        data.calibration_saved = 0;
+        data.calibration_saved = false;
       }
     }
 
@@ -85,7 +94,7 @@ class Storage {
 
     void save()
     {
-      data.calibration_saved = 1;
+      data.calibration_saved = true;
 
       Serial.println("");
       Serial.print("Calibration saving... \t");

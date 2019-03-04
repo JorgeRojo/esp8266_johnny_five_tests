@@ -46,7 +46,7 @@ class Orientation {
 
     byte _pin_led;
     Storage storage = Storage(false);
-  
+
     void blink()
     {
       int i;
@@ -164,7 +164,7 @@ class Orientation {
     void _state_1() {
       if (this->state == 1) {
 
-        if (this->storage.data.calibration_saved != 1)
+        if (!this->storage.data.calibration_saved)
         {
           Serial.println("\nCalculating offsets...");
           mpuCalibration();
@@ -231,7 +231,7 @@ class Orientation {
       if (this->state == 3) {
 
         // Saving calibration
-        if (this->storage.data.calibration_saved != 1)
+        if (!this->storage.data.calibration_saved)
         {
           this->storage.data.ax_offset = this->ax_offset;
           this->storage.data.ay_offset = this->ay_offset;
@@ -259,8 +259,8 @@ class Orientation {
         // Controlar overflow
         if ((mpuIntStatus & 0x10) || this->fifoCount == 1024)
         {
-          mpu.resetFIFO(); 
-//          Serial.println(F("FIFO overflow!"));
+          mpu.resetFIFO();
+          //          Serial.println(F("FIFO overflow!"));
         }
         else if (mpuIntStatus & 0x02)
         {
@@ -312,7 +312,7 @@ class Orientation {
     Orientation(byte _pin_led, Storage &storage)
     {
       this->_pin_led = _pin_led;
-      this->storage = storage; 
+      this->storage = storage;
     }
 
     int state = 0;
@@ -410,6 +410,42 @@ class Orientation {
 
     VectorInt16 get_aaReal () {
       return this->aaReal;
+    }
+
+    char* get_polytt_face() {
+
+      float m_err = 20;
+      char* face = "";
+      float Y = this->ypr[1] * 180 / M_PI;
+      float X = this->ypr[2] * 180 / M_PI;
+
+
+      if ( ((40 + m_err) >= Y && (40 - m_err) <= Y) && ((40 + m_err) >= X && (40 - m_err) <= X) ) {
+        face = "F";
+      }
+      if ( ((-40 + m_err) >= Y && (-40 - m_err) <= Y) && ((40 + m_err) >= X && (40 - m_err) <= X) ) {
+        face = "E";
+      }
+      if ( ((-140 + m_err) >= Y && (-140 - m_err) <= Y) && ((140 + m_err) >= X && (140 - m_err) <= X) ) {
+        face = "H";
+      }
+      if ( ((140 + m_err) >= Y && (140 - m_err) <= Y) && ((140 + m_err) >= X && (140 - m_err) <= X) ) {
+        face = "G";
+      }
+      if ( ((140 + m_err) >= Y && (140 - m_err) <= Y) && ((-140 + m_err) >= X && (-140 - m_err) <= X) ) {
+        face = "C";
+      }
+      if ( ((-140 + m_err) >= Y && (-140 - m_err) <= Y) && ((-140 + m_err) >= X && (-140 - m_err) <= X) ) {
+        face = "B";
+      }
+      if ( ((-40 + m_err) >= Y && (-40 - m_err) <= Y) && ((-40 + m_err) >= X && (-40 - m_err) <= X) ) {
+        face = "A";
+      }
+      if ( ((40 + m_err) >= Y && (40 - m_err) <= Y) && ((-40 + m_err) >= X && (-40 - m_err) <= X) ) {
+        face = "D";
+      }
+
+      return face;
     }
 
 };
