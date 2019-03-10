@@ -2,8 +2,7 @@ import { bindActionCreators, Dispatch } from "redux";
 import { connect } from "react-redux";
 import { RootAction, RootState } from 'Types';
 
-import React, { PureComponent } from "react";
-import { PermissionsAndroid } from 'react-native'; 
+import React, { PureComponent } from "react"; 
 
 // import iotScanner from "~/services/IotScanner";
 import * as iotActions from "~/store/status/iot/actions";

@@ -1,21 +1,37 @@
-class Battery { 
-	private:
-		byte _pin;
-		unsigned int _raw;
-		float _max; 
-		float _res;
+#define BATT_MAX_RAW 2100
 
-	public:
-		Battery(byte pin, float batteryMaxVolt, float resistanceDivider) {
-			this->_pin = pin;
-			this->_max = batteryMaxVolt;
-			this->_res = resistanceDivider; 
-			pinMode(pin, INPUT);
-		} 
+class Battery {
 
-		float volt() {     
-      		_raw = float(analogRead(this->_pin)); 
-			return ((this->_max / this->_res) * (_raw / 1023));
-		}  
+  private:
+    byte _pin;
+    unsigned int _raw;
+    float _last = BATT_MAX_RAW;
+    int _r = 1;
+
+  public:
+    Battery(byte pin) {
+      this->_pin = pin;
+      pinMode(pin, INPUT);
+    }
+
+    float level() {
+      _raw = analogRead(this->_pin);
+
+      if ( this->_last < _raw && (_raw - this->_last) > this->_r) {
+        this->_last += this->_r;
+      }
+      else if ( this->_last > _raw && (this->_last - _raw) > this->_r) {
+        this->_last -= this->_r;
+      }
+      else {
+        this->_last = _raw;
+      }
+
+          
+      float level = (100 * this->_last) / BATT_MAX_RAW; 
+
+      delay(100);
+      return level;
+    }
+
 };
- 
