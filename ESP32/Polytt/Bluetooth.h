@@ -2,13 +2,15 @@
 #include <BLEServer.h>
 #include <BLEUtils.h>
 #include <BLE2902.h>
+#include <Regexp.h>
+//https://github.com/nickgammon/Regexp
 
 // See the following for generating UUIDs:
 // https://www.uuidgenerator.net/
 
 #define SERVICE_UUID "91e88e4d-66b6-40b7-aa14-d5af542a7f0b"
 #define CHARACTERISTIC_UUID "19a09ba4-51f4-45eb-a2d9-bec08dad539e"
- 
+
 
 
 Storage _ble_storage = Storage(false);
@@ -16,22 +18,52 @@ bool _ble_device_connected = false;
 bool _ble_old_device_connected = false;
 BLECharacteristic *_ble_p_characteristic = NULL;
 BLEServer *_ble_p_server = NULL;
+String msg = "";
 
 class ClientCallbacks : public BLECharacteristicCallbacks
 {
-
     void onWrite(BLECharacteristic *_ble_p_characteristic)
     {
       std::string value = _ble_p_characteristic->getValue();
 
       if (value.length() > 0)
       {
-        for (int i = 0; i < value.length(); i++) {
-          Serial.print(value[i]);
-        }
-        Serial.println();
 
-        //TODO: connect wifi and save data connettion
+        String chunk = "";
+        for (int i = 0; i < value.length(); i++) {
+          chunk +=  value[i];
+        }
+
+
+        MatchState ms;
+        
+        char copy[20];
+        chunk.toCharArray(copy, 20); 
+        ms.Target(copy);
+        unsigned int count = ms.MatchCount ("^<MSG>");
+ 
+        if (count > 0) {
+          Serial.println("Msg init !");
+          msg = "";
+        }
+
+        msg += chunk;
+
+        
+        MatchState ms2;
+        char copy2[msg.length()];
+        msg.toCharArray(copy2, msg.length()); 
+        ms2.Target(copy2);
+        unsigned int count2 = ms2.MatchCount ("MSG> *$");
+  
+          
+        if (count2 > 0) {
+          Serial.println("Msg end!");
+          Serial.println(msg);
+          msg = "";
+        }
+
+
       }
     };
 };
@@ -58,6 +90,8 @@ class Bluetooth
     std::string device_name;
     BLEService *ble_service = NULL;
     bool on = false;
+
+
 
   public:
     Bluetooth(std::string device_name, Storage &storage)

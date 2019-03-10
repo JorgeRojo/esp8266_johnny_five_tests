@@ -93,14 +93,18 @@ export default class App extends Component {
     sendMessage = () => {   
  
         if(this.device) {
+            const config: Object = {
+                "wifi_sidd": "AOCARALLO_2G",
+                "wifi_pass": "A28042804a",
+            }; 
+            const msg: String = '<MSG>' + JSON.stringify(config) + '<#MSG>'; 
 
-            this.device.writeCharacteristicWithoutResponseForService(SERVICE_UUID, CHARACTERISTIC_UUID, 
-                base64.encode(utf8.encode(JSON.stringify('wifi_ssid-1234-1234-1234-1234')))
-            );
+            for (let i = 0; i < Math.ceil(msg.length / 20); i ++ ) {
+                this.device.writeCharacteristicWithoutResponseForService(SERVICE_UUID, CHARACTERISTIC_UUID, 
+                    base64.encode(utf8.encode(msg.slice(i * 20, ((i+1) * 20))))
+                );
+            } 
 
-            this.device.writeCharacteristicWithoutResponseForService(SERVICE_UUID, CHARACTERISTIC_UUID, 
-                base64.encode(utf8.encode(JSON.stringify('wifi_password-1234-1234-1234-1234')))
-            );
 
         } 
     }
