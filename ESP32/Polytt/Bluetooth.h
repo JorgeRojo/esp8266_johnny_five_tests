@@ -3,7 +3,7 @@
 #include <BLEUtils.h>
 #include <BLE2902.h>
 #include <Regexp.h>
-//https://github.com/nickgammon/Regexp
+#include <ArduinoJson.h>
 
 // See the following for generating UUIDs:
 // https://www.uuidgenerator.net/
@@ -17,8 +17,28 @@ Storage _ble_storage = Storage(false);
 bool _ble_device_connected = false;
 bool _ble_old_device_connected = false;
 BLECharacteristic *_ble_p_characteristic = NULL;
-BLEServer *_ble_p_server = NULL;
-String msg = "";
+BLEServer *_ble_p_server = NULL; 
+String _ble_tmp_msg = "";
+
+  
+void parse_msg (char * msg) 
+{  
+    StaticJsonDocument<200> doc; 
+    DeserializationError error = deserializeJson(doc, msg);
+
+    if (error) {
+      Serial.print(F("deserializeJson() failed: "));
+      Serial.println(error.c_str());
+      return;
+    }
+  
+    const char* wifi_ssid = doc["wifi_ssid"];
+    const char* wifi_pass = doc["wifi_pass"];
+    Serial.println(wifi_ssid); 
+    Serial.println(wifi_pass); 
+    
+}
+
 
 class ClientCallbacks : public BLECharacteristicCallbacks
 {
@@ -35,35 +55,36 @@ class ClientCallbacks : public BLECharacteristicCallbacks
         }
 
 
+        //find msg parts
         MatchState ms;
+        unsigned int count = 0;
         
-        char copy[20];
-        chunk.toCharArray(copy, 20); 
-        ms.Target(copy);
-        unsigned int count = ms.MatchCount ("^<MSG>");
+        char c_chunk[chunk.length()];
+        chunk.toCharArray(c_chunk, chunk.length()); 
+        ms.Target(c_chunk);
+        count = ms.MatchCount("^<MSG>");
  
-        if (count > 0) {
-          Serial.println("Msg init !");
-          msg = "";
+        if (count > 0) { 
+          _ble_tmp_msg = "";
         }
 
-        msg += chunk;
-
+        _ble_tmp_msg += chunk; 
         
-        MatchState ms2;
-        char copy2[msg.length()];
-        msg.toCharArray(copy2, msg.length()); 
-        ms2.Target(copy2);
-        unsigned int count2 = ms2.MatchCount ("MSG> *$");
+        char c_msg[(_ble_tmp_msg + " ").length()];
+        (_ble_tmp_msg + " ").toCharArray(c_msg, (_ble_tmp_msg + " ").length()); 
+        ms.Target(c_msg);
+        count = ms.MatchCount("<#MSG> *");
+        
+        if (count > 0) {  
+           
+          ms.GlobalReplace ("[^<]*<MSG> *", "");
+          ms.GlobalReplace ("<#MSG>.*", "");
+
+          parse_msg(c_msg);
   
-          
-        if (count2 > 0) {
-          Serial.println("Msg end!");
-          Serial.println(msg);
-          msg = "";
+          _ble_tmp_msg = "";
         }
-
-
+ 
       }
     };
 };
@@ -85,6 +106,7 @@ class ServerCallbacks : public BLEServerCallbacks
 
 class Bluetooth
 {
+  
 
   private:
     std::string device_name;

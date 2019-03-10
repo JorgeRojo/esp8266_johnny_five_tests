@@ -28,7 +28,8 @@ char* ant_face = "";
 void setup()
 {
   Serial.begin(115200);
-  delay(500);
+  while (!Serial) continue;
+   
 
   bluetooth.start();
   delay(500);
