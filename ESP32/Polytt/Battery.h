@@ -1,5 +1,4 @@
-#define BATT_MAX_RAW 2320
-
+#define BATT_MAX_RAW 2100
 
 class Battery {
 
@@ -28,8 +27,6 @@ class Battery {
         this->_last = _raw;
       }
 
-      
-      Serial.println(this->_last);
           
       float level = (100 * this->_last) / BATT_MAX_RAW; 
 
