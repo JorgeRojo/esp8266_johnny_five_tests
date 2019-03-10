@@ -50,9 +50,6 @@ void loop()
 
   bluetooth.loop();
 
-
-
-
   orientation.loop();
 
   char* face = orientation.get_polytt_face();
@@ -70,10 +67,9 @@ void loop()
 
   //Battery level inidicators
   float batteryLevel = battery.level();
-  digitalWrite(PIN_LED_BAT_LEVEL_100, batteryLevel > 90 ? HIGH : LOW);
+  digitalWrite(PIN_LED_BAT_LEVEL_100, batteryLevel > 98 ? HIGH : LOW);
   digitalWrite(PIN_LED_BAT_LEVEL_075, batteryLevel > 75 ? HIGH : LOW);
   digitalWrite(PIN_LED_BAT_LEVEL_040, batteryLevel > 40 ? HIGH : LOW);
 
-  delay(200);
 
 }

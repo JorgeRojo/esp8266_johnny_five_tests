@@ -6,7 +6,8 @@ class Battery {
   private:
     byte _pin;
     unsigned int _raw;
-    float _last = 0;
+    float _last = BATT_MAX_RAW;
+    int _r = 1;
 
   public:
     Battery(byte pin) {
@@ -16,20 +17,24 @@ class Battery {
 
     float level() {
       _raw = analogRead(this->_pin);
-      
-      float level = (100 * _raw) / BATT_MAX_RAW;
 
-      if ( this->_last < level && (level - this->_last) > 1 ) {
-        this->_last += 1;
+      if ( this->_last < _raw && (_raw - this->_last) > this->_r) {
+        this->_last += this->_r;
       }
-      else if ( this->_last > level && (this->_last - level) > 1 ) {
-        this->_last -= 1;
+      else if ( this->_last > _raw && (this->_last - _raw) > this->_r) {
+        this->_last -= this->_r;
       }
       else {
-        this->_last = level;
+        this->_last = _raw;
       }
 
-      return this->_last;
+      
+      Serial.println(this->_last);
+          
+      float level = (100 * this->_last) / BATT_MAX_RAW; 
+
+      delay(100);
+      return level;
     }
 
 };
