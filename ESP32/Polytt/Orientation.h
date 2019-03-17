@@ -44,7 +44,7 @@ class Orientation {
     int mean_ax, mean_ay, mean_az, mean_gx, mean_gy, mean_gz;
     int ax_offset, ay_offset, az_offset, gx_offset, gy_offset, gz_offset = 0;
 
-    byte _pin_led;
+    RGBLed rgbled = RGBLed(0, 0, 0);
     Storage storage = Storage(false);
 
     void blink()
@@ -53,7 +53,13 @@ class Orientation {
       for (i = 0; i < 10; i = i + 1)
       {
         delay(100);
-        digitalWrite(this->_pin_led, (i % 2 != 0) ? HIGH : LOW);
+
+        this->rgbled.color(
+          0,
+          0,
+          (i % 2 != 0) ? 200 : 0
+        );
+
       }
     }
 
@@ -249,7 +255,7 @@ class Orientation {
     void _state_4() {
       if (this->state == 4) {
 
-        digitalWrite(this->_pin_led, LOW);
+        this->rgbled.color(0, 0, 0);
 
         mpuIntStatus = mpu.getIntStatus();
 
@@ -309,17 +315,15 @@ class Orientation {
   public:
 
 
-    Orientation(byte _pin_led, Storage &storage)
+    Orientation(RGBLed rgbled, Storage &storage)
     {
-      this->_pin_led = _pin_led;
+      this->rgbled = rgbled;
       this->storage = storage;
     }
 
     bool on = false;
     int state = 0;
     void start () {
-
-      pinMode(this->_pin_led, OUTPUT);
 
       // join I2C bus (I2Cdev library doesn't do this automatically)
 #if I2CDEV_IMPLEMENTATION == I2CDEV_ARDUINO_WIRE
