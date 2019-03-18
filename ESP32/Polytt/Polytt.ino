@@ -37,7 +37,25 @@ void setup()
 void loop()
 {
 
-  // rgbled.blink(255, 255, 255, 200);
+//   rgbled.color(255, 255, 0);
+//    delay (1000) ;
+//    
+//   rgbled.color(255, 0, 255);
+//    delay (1000) ;
+//
+//   rgbled.color(0, 255, 0);
+//    delay (1000) ;
+//
+//   rgbled.color(255, 0, 0);
+//    delay (1000) ;
+//    
+//   rgbled.color(0, 0, 250);
+//    delay (1000) ;
+//
+//   rgbled.color(255, 255, 255);
+//    delay (1000) ;
+
+   
 
   bluetooth.loop();
 
@@ -49,7 +67,11 @@ void loop()
     Serial.print("FACE\t");
     Serial.println(face);
     ant_face = face;
-    rgbled.blink(0, 0, 255, 50);
+    rgbled.blink(0, 0, 255, 200);
+    rgbled.blink(0, 0, 255, 200);
+    rgbled.blink(0, 0, 255, 200);
+    rgbled.blink(0, 0, 255, 200);
+    rgbled.blink(0, 0, 255, 200);
   }
 
   
@@ -62,9 +84,5 @@ void loop()
   {
     rgbled.blink(255, 0, 0, 200);
   } 
-  else if (orientation.state >= 4)
-  {
-    rgbled.blink(255, 255, 255, 50);
-  }
 
 }
