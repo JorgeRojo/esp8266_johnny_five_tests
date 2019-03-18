@@ -30,7 +30,6 @@ class Battery {
           
       float level = (100 * this->_last) / BATT_MAX_RAW; 
 
-      delay(100);
       return level;
     }
 
