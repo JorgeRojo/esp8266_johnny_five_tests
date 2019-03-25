@@ -1,9 +1,10 @@
 #include "Arduino.h"
-#include "./RGBLed.h"
 #include "./Storage.h"
+#include "./RGBLed.h"
 #include "./Bluetooth.h"
 #include "./Orientation.h"
 #include "./Battery.h"
+#include "./WifiNotifier.h"
 
 #define PIN_BATTERY A0
 #define PIN_LED_RED 23
@@ -21,8 +22,11 @@ char *ant_face = "";
 void setup()
 {
     Serial.begin(115200);
-    while (!Serial)
-        continue;
+    while (!Serial) {
+        continue; 
+        delay(500);
+    }
+        
     delay(500);
     
     Serial.println();
@@ -38,7 +42,7 @@ void setup()
 }
 
 void loop()
-{
+{ 
   
     bluetooth.loop();
 
@@ -59,9 +63,6 @@ void loop()
 
     if (batteryLevel <= 40) {
         rgbled.color(255, 0, 0);
-    }
-    else {
-        rgbled.color(0, 255, 0);
     }
 
     delay(200);

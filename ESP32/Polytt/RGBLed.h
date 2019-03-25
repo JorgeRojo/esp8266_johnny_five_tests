@@ -17,11 +17,7 @@ class RGBLed
     int _cont;
     bool _increase = true;
 
-    bool _blick_on = true;
-
-    void blink()
-    {
-    }
+    bool _blick_on = true; 
 
   public:
     RGBLed(byte _pin_red, byte _pin_green, byte _pin_blue)
@@ -68,15 +64,14 @@ class RGBLed
         analogWrite(this->pin_blue, ((B * (255 - this->_blue_c)) / 255));
     }
 
-    void white() 
-    {
-       this->color(255, 255, 255);      
-    }
-
-    void black() 
-    {
-       this->color(0, 0, 0);      
-    }
+    void red() { this->color(255, 0, 0); } 
+    void green() { this->color(0, 255, 0); } 
+    void blue() { this->color(0, 0, 255); } 
+    void cyan() { this->color(0, 255, 255); } 
+    void yellow() { this->color(255, 255, 0); } 
+    void magenta() { this->color(255, 0, 255); } 
+    void white() { this->color(255, 255, 255); } 
+    void black() { this->color(0, 0, 0); }
 
     void blink(int R, int G, int B, int _delay)
     {

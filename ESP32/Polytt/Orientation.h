@@ -251,7 +251,7 @@ class Orientation
                 this->_storage.data.gx_offset = this->gx_offset;
                 this->_storage.data.gy_offset = this->gy_offset;
                 this->_storage.data.gz_offset = this->gz_offset;
-                this->_storage.save();
+                //this->_storage.save();
             }
 
             this->blink();

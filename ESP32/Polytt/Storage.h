@@ -14,8 +14,7 @@ typedef struct
     int gy_offset;
     int gz_offset;
 
-    // wifi
-    bool wifi_connection_saved;
+    // wifi  
     char *wifi_ssid;
     char *wifi_password;
 
@@ -62,7 +61,10 @@ class Storage
         // reset storage
         if (_reset)
         {
+            data.max_raw_battery = 0;
             data.calibration_saved = false;
+            data.wifi_ssid = "";
+            data.wifi_password = "";
         }
     }
 
@@ -82,8 +84,7 @@ class Storage
         Serial.print("    gy_offset:\t"); Serial.println(data.gy_offset);
         Serial.print("    gz_offset:\t"); Serial.println(data.gz_offset);
         
-        Serial.println("  --- wifi ---  ");
-        Serial.print("    wifi_connection_saved:\t"); Serial.println(data.wifi_connection_saved);
+        Serial.println("  --- wifi ---  "); 
         Serial.print("    wifi_ssid:\t"); Serial.println(data.wifi_ssid);
         Serial.print("    wifi_password:\t"); Serial.println(data.wifi_password);
 
@@ -103,11 +104,14 @@ class Storage
         this->_print();
     }
 
-    void save()
+    void save(bool print = false)
     { 
         Serial.println("STRG -> saving... \t"); 
         this->_saveStorage();
-        this->_print();
+        if (print)
+        {
+            this->_print();
+        }
     }
 
     void load(bool print = false)
