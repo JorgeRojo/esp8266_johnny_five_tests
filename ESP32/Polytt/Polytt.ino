@@ -15,6 +15,7 @@ RGBLed rgbled = RGBLed(PIN_LED_RED, PIN_LED_GREEN, PIN_LED_BLUE);
 Storage storage = Storage(false);
 Battery battery = Battery(PIN_BATTERY, storage);
 Orientation orientation = Orientation(rgbled, storage);
+WifiNotifier wifi = WifiNotifier(storage);
 Bluetooth bluetooth = Bluetooth("Polytt_9R4W7bvff9", storage);
 
 char *ant_face = "";
@@ -35,14 +36,29 @@ void setup()
 
     battery.start();  
     rgbled.start(); 
-    bluetooth.start();  
     orientation.start();
+    wifi.start();  
+    bluetooth.start();  
     
     delay(500);
 }
 
 void loop()
 { 
+
+//    rgbled.green(); 
+//    delay(2000);
+//    rgbled.blue(); 
+//    delay(2000);
+//    rgbled.red(); 
+//    delay(2000);
+//    rgbled.cyan(); 
+//    delay(2000);
+//    rgbled.yellow(); 
+//    delay(2000);
+//    rgbled.white(); 
+//    delay(2000);  
+//    return;
   
     bluetooth.loop();
 
@@ -59,7 +75,7 @@ void loop()
 
     //Battery level inidicators
     float batteryLevel = battery.level();
-    //Serial.println(batteryLevel);
+    Serial.println(batteryLevel);
 
     if (batteryLevel <= 40) {
         rgbled.color(255, 0, 0);

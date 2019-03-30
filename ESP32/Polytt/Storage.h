@@ -4,6 +4,7 @@ typedef struct
 {
     // battery
     float max_raw_battery;
+    float min_raw_battery;
 
     // orientation
     bool calibration_saved;
@@ -74,6 +75,7 @@ class Storage
 
         Serial.println("  --- battery ---");
         Serial.print("    max_raw_battery:\t"); Serial.println(data.max_raw_battery);
+        Serial.print("    min_raw_battery:\t"); Serial.println(data.min_raw_battery);
 
         Serial.println("  --- calibration ---  ");
         Serial.print("    calibration_saved:\t"); Serial.println(data.calibration_saved);

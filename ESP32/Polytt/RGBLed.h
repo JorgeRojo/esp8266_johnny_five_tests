@@ -10,8 +10,8 @@ class RGBLed
     byte pin_green;
     byte pin_blue;
 
-    int _red_c = 60;
-    int _green_c = 100;
+    int _red_c = 0;
+    int _green_c = 0;
     int _blue_c = 0;
 
     int _cont;
