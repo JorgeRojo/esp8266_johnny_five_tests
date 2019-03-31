@@ -1,11 +1,7 @@
 #include <EEPROM.h>
 
 typedef struct
-{
-    // battery
-    float max_raw_battery;
-    float min_raw_battery;
-
+{   
     // orientation
     bool calibration_saved;
     int ax_offset;
@@ -15,7 +11,7 @@ typedef struct
     int gy_offset;
     int gz_offset;
 
-    // wifi  
+    // wifi
     char *wifi_ssid;
     char *wifi_password;
 
@@ -61,8 +57,7 @@ class Storage
 
         // reset storage
         if (_reset)
-        {
-            data.max_raw_battery = 0;
+        { 
             data.calibration_saved = false;
             data.wifi_ssid = "";
             data.wifi_password = "";
@@ -70,26 +65,30 @@ class Storage
     }
 
     void _print()
-    { 
-        Serial.println("STRG -> *** data list ***");
-
-        Serial.println("  --- battery ---");
-        Serial.print("    max_raw_battery:\t"); Serial.println(data.max_raw_battery);
-        Serial.print("    min_raw_battery:\t"); Serial.println(data.min_raw_battery);
-
-        Serial.println("  --- calibration ---  ");
-        Serial.print("    calibration_saved:\t"); Serial.println(data.calibration_saved);
-        Serial.print("    ax_offset:\t"); Serial.println(data.ax_offset);
-        Serial.print("    ay_offset:\t"); Serial.println(data.ay_offset);
-        Serial.print("    az_offset:\t"); Serial.println(data.az_offset);
-        Serial.print("    gx_offset:\t"); Serial.println(data.gx_offset);
-        Serial.print("    gy_offset:\t"); Serial.println(data.gy_offset);
-        Serial.print("    gz_offset:\t"); Serial.println(data.gz_offset);
+    {
+        Serial.println("STRG -> *** data list ***"); 
         
-        Serial.println("  --- wifi ---  "); 
-        Serial.print("    wifi_ssid:\t"); Serial.println(data.wifi_ssid);
-        Serial.print("    wifi_password:\t"); Serial.println(data.wifi_password);
+        Serial.println("  --- calibration ---  ");
+        Serial.print("    calibration_saved:\t");
+        Serial.println(data.calibration_saved);
+        Serial.print("    ax_offset:\t");
+        Serial.println(data.ax_offset);
+        Serial.print("    ay_offset:\t");
+        Serial.println(data.ay_offset);
+        Serial.print("    az_offset:\t");
+        Serial.println(data.az_offset);
+        Serial.print("    gx_offset:\t");
+        Serial.println(data.gx_offset);
+        Serial.print("    gy_offset:\t");
+        Serial.println(data.gy_offset);
+        Serial.print("    gz_offset:\t");
+        Serial.println(data.gz_offset);
 
+        Serial.println("  --- wifi ---  ");
+        Serial.print("    wifi_ssid:\t");
+        Serial.println(data.wifi_ssid);
+        Serial.print("    wifi_password:\t");
+        Serial.println(data.wifi_password);
     }
 
   public:
@@ -102,13 +101,13 @@ class Storage
 
     void print()
     {
-        this->_loadStorage(); 
+        this->_loadStorage();
         this->_print();
     }
 
     void save(bool print = false)
-    { 
-        Serial.println("STRG -> saving... \t"); 
+    {
+        Serial.println("STRG -> saving... \t");
         this->_saveStorage();
         if (print)
         {

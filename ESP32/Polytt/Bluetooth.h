@@ -25,16 +25,18 @@ void parse_msg(char *msg)
 
     if (error)
     {
-        Serial.print(F("BLE ->  deserializeJson() failed: "));
+        Serial.print(F("BLE -> deserializeJson() failed: "));
         Serial.println(error.c_str());
         return;
     }
 
     const char *wifi_ssid = doc["wifi_ssid"];
     const char *wifi_pass = doc["wifi_pass"];
-    
-    Serial.print("BLE -> wifi ssid: "); Serial.println(wifi_ssid);
-    Serial.print("BLE -> wifi pass: "); Serial.println(wifi_pass);
+
+    Serial.print("BLE -> wifi ssid: ");
+    Serial.println(wifi_ssid);
+    Serial.print("BLE -> wifi pass: ");
+    Serial.println(wifi_pass);
 }
 
 class ClientCallbacks : public BLECharacteristicCallbacks
@@ -105,24 +107,23 @@ class ServerCallbacks : public BLEServerCallbacks
 class Bluetooth
 {
 
-  private:
-    std::string device_name;
+  private: 
     BLEService *ble_service = NULL;
     bool on = false;
 
   public:
-    Bluetooth(std::string device_name, Storage &storage)
+    Bluetooth(Storage &storage)
     {
-        this->device_name = device_name;
         _ble_storage = storage;
-    }
-
-    void start()
+    } 
+      
+    void setup(std::string device_name)
     { 
+
         _ble_storage.load(false);
-        
+
         // Create the BLE Device
-        BLEDevice::init(this->device_name);
+        BLEDevice::init( device_name );
 
         // Create the BLE Server
         _ble_p_server = BLEDevice::createServer();
@@ -145,18 +146,27 @@ class Bluetooth
         // Create a BLE Descriptor
         _ble_p_characteristic->addDescriptor(new BLE2902());
 
-        // Start the service
-        this->ble_service->start();
+        this->on = false;
+    }
 
-        // Start advertising
-        BLEAdvertising *p_advertising = BLEDevice::getAdvertising();
-        p_advertising->addServiceUUID(SERVICE_UUID);
-        p_advertising->setScanResponse(false);
-        p_advertising->setMinPreferred(0x0); // set value to 0x00 to not advertise this parameter
-        BLEDevice::startAdvertising();
-        Serial.println("BLE -> Waiting a client connection to notify...");
+    void start()
+    {
+        if (!this->on)
+        {
+            // Start the service
+            this->ble_service->start();
 
-        this->on = true;
+            // Start advertising
+            BLEAdvertising *p_advertising = BLEDevice::getAdvertising();
+            p_advertising->addServiceUUID(SERVICE_UUID);
+            p_advertising->setScanResponse(false);
+            p_advertising->setMinPreferred(0x0); // set value to 0x00 to not advertise this parameter
+            BLEDevice::startAdvertising();
+            Serial.println("BLE -> Waiting a client connection to notify...");
+
+            this->on = true;
+            Serial.println("BLE -> START");
+        }
     }
 
     void sendToDevice(std::string message)
@@ -170,9 +180,12 @@ class Bluetooth
 
     void stop()
     {
-        // Stop the service
-        this->ble_service->stop();
-        this->on = false;
+        if (this->on)
+        {
+            this->ble_service->stop();
+            this->on = false;
+            Serial.println("BLE -> STOP");
+        }
     }
 
     void loop()

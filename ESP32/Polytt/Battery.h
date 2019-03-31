@@ -1,97 +1,64 @@
 #include "Arduino.h"
 #include <analogWrite.h>
-#define ROW_MAX 1550.0 // initial max row
-#define ROW_MIN 1300.0 // initial max row
-#define RAW_EM 1       // row margin error
+#define RAW_MAX 1600.0 // initial max row
+#define RAW_MIN 1120.0 // initial min row
+#define RAW_EM 5       // row margin error
 
 class Battery
 {
 
   private:
-    byte pin;
-    unsigned int _raw;
-    float _max = ROW_MAX;
-    float _min = ROW_MIN;
-    float _last = ROW_MAX;
-    Storage _storage = Storage(false);
-
-    void store_raw()
-    {
-        if ( this->_last - this->_max > 20 )
-        {
-            this->_max = this->_last;
-            this->_storage.data.max_raw_battery = this->_last; 
-            this->_storage.save(false);
-        }
-        
-        if ( this->_min - this->_last > 20 )
-        {
-            this->_min = this->_last;
-            this->_storage.data.min_raw_battery = this->_last; 
-            this->_storage.save(false); 
-        }
-    }
-
-    void _set_raw()
-    {
-        if (this->_storage.data.max_raw_battery > this->_max)
-        {
-            this->_max = this->_storage.data.max_raw_battery;
-        }
-           
-        if (this->_storage.data.min_raw_battery < this->_min)
-        {
-            this->_min = this->_storage.data.min_raw_battery;
-        }
-        Serial.print("BATT -> Max initial battery raw: ");
-        Serial.println(this->_max);
-        Serial.print("BATT -> Min initial battery raw: ");
-        Serial.println(this->_min);
-    }
+    byte _pin; 
+    float _max = RAW_MAX; 
+    float _last = RAW_MIN;
+    float _level = 0;
+    float _last_level = 0;
 
   public:
-    Battery(byte pin, Storage &storage)
+    Battery(byte pin)
     {
-        this->pin = pin;
-        analogWriteResolution(this->pin, 12);
-
-        this->_storage = storage;
+        _pin = pin;
     }
 
     void start()
     {
-        this->_storage.load(false);
-        this->_set_raw();
+        analogWriteResolution(_pin, 12);
     }
 
-    float level()
+    float loop()
     {
-        _raw = analogRead(this->pin);
+        unsigned int _raw = analogRead(_pin);
 
-        if (this->_last < _raw && (_raw - this->_last) > RAW_EM)
+        if (_last < _raw && (_raw - _last) > RAW_EM)
         {
-            this->_last += RAW_EM;
+            _last += RAW_EM;
         }
-        else if (this->_last > _raw && (this->_last - _raw) > RAW_EM)
+        else if (_last > _raw && (_last - _raw) > RAW_EM)
         {
-            this->_last -= RAW_EM;
+            _last -= RAW_EM;
         }
         else
         {
-            this->_last = _raw;
+            _last = _raw;
         }
 
-         
-        Serial.print(this->_max);  
-        Serial.print(" - ");
-        Serial.print(this->_last); 
-        Serial.print(" - ");
-        Serial.println(this->_min); 
+        if (_last > _max) 
+        {
+            _max = _last;
+        } 
+ 
+        _level = (100 * (_last - RAW_MIN)) / (_max - RAW_MIN);
 
-        this->store_raw();
+        return _level;
+    }
 
-        float level = (100 * this->_last) / this->_max;
-
-        return level;
+    void on_level_change(void (*notify)(float))
+    { 
+        float dif = _last_level - _level; 
+        if (dif >= 10 || dif <= -10)
+        {
+            _last_level = _level;
+            notify(_level);
+        }
     }
 };

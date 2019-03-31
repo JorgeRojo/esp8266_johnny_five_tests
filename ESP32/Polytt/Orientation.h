@@ -42,22 +42,14 @@ class Orientation
     int mean_ax, mean_ay, mean_az, mean_gx, mean_gy, mean_gz;
     int ax_offset, ay_offset, az_offset, gx_offset, gy_offset, gz_offset = 0;
 
-    RGBLed rgbled = RGBLed(0, 0, 0);
+    RGBLed _rgbled = RGBLed(0, 0, 0);
     Storage _storage = Storage(false);
+
+    char *_ant_face = "X";
 
     void blink()
     {
-        int i;
-        for (i = 0; i < 10; i = i + 1)
-        {
-            if(i % 2 != 0) { 
-                this->rgbled.white(); 
-            } 
-            else {
-                this->rgbled.black();  
-            }
-            delay(100);
-        }
+        this->_rgbled.blink_white();
     }
 
     void mpuMeansensors()
@@ -243,15 +235,15 @@ class Orientation
 
             // Saving calibration
             if (!this->_storage.data.calibration_saved)
-            { 
-                this->_storage.data.calibration_saved = true; 
+            {
+                this->_storage.data.calibration_saved = true;
                 this->_storage.data.ax_offset = this->ax_offset;
                 this->_storage.data.ay_offset = this->ay_offset;
                 this->_storage.data.az_offset = this->az_offset;
                 this->_storage.data.gx_offset = this->gx_offset;
                 this->_storage.data.gy_offset = this->gy_offset;
                 this->_storage.data.gz_offset = this->gz_offset;
-                //this->_storage.save();
+                this->_storage.save(true);
             }
 
             this->blink();
@@ -263,7 +255,7 @@ class Orientation
         if (this->state == 4)
         {
 
-            this->rgbled.color(0, 0, 0);
+            this->_rgbled.color(0, 0, 0);
 
             mpuIntStatus = mpu.getIntStatus();
 
@@ -295,34 +287,34 @@ class Orientation
                 mpu.dmpGetQuaternion(&this->q, this->fifoBuffer);
                 mpu.dmpGetGravity(&this->gravity, &this->q);
                 mpu.dmpGetYawPitchRoll(this->ypr, &this->q, &this->gravity);
-                //                    Serial.print("YPR\t");
-                //                    Serial.print(this->ypr[0] * 180 / M_PI);
-                //                    Serial.print("\t");
-                //                    Serial.print(this->ypr[1] * 180 / M_PI);
-                //                    Serial.print("\t");
-                //                    Serial.print(this->ypr[2] * 180 / M_PI);
+                // Serial.print("YPR\t");
+                // Serial.print(this->ypr[0] * 180 / M_PI);
+                // Serial.print("\t");
+                // Serial.print(this->ypr[1] * 180 / M_PI);
+                // Serial.print("\t");
+                // Serial.print(this->ypr[2] * 180 / M_PI);
+                // Serial.println();
 
                 //Acceleration
                 mpu.dmpGetQuaternion(&this->q, this->fifoBuffer);
                 mpu.dmpGetAccel(&this->aa, this->fifoBuffer);
                 mpu.dmpGetGravity(&this->gravity, &this->q);
                 mpu.dmpGetLinearAccel(&this->aaReal, &this->aa, &this->gravity);
-                //                    Serial.print("\tAREAL\t");
-                //                    Serial.print(this->aaReal.x);
-                //                    Serial.print("\t");
-                //                    Serial.print(this->aaReal.y);
-                //                    Serial.print("\t");
-                //                    Serial.print(this->aaReal.z);
-                //
-                //                    Serial.println("");
+                // Serial.println("\tAREAL\t");
+                // Serial.print(this->aaReal.x);
+                // Serial.print("\t");
+                // Serial.print(this->aaReal.y);
+                // Serial.print("\t");
+                // Serial.print(this->aaReal.z);
+                // Serial.println();
             }
         }
     }
 
   public:
-    Orientation(RGBLed rgbled, Storage &storage)
+    Orientation(RGBLed &rgbled, Storage &storage)
     {
-        this->rgbled = rgbled;
+        this->_rgbled = rgbled;
         this->_storage = storage;
     }
 
@@ -344,7 +336,7 @@ class Orientation
 
         // connection test
         Serial.println(F("MPU -> Testing device connections..."));
-        Serial.println(mpu.testConnection() ? F("MPU6050 connection successful") : F("MPU6050 connection failed"));
+        Serial.println(mpu.testConnection() ? F("MPU -> MPU6050 connection successful") : F("MPU -> MPU6050 connection failed"));
 
         // initialice DMP
         Serial.println(F("MPU -> Initializing DMP..."));
@@ -432,7 +424,6 @@ class Orientation
         char *face = "X";
         float Y = this->ypr[1] * 180 / M_PI;
         float X = this->ypr[2] * 180 / M_PI;
- 
 
         if (((0 + m_err) >= Y && (0 - m_err) <= Y) && ((0 + m_err) >= X && (0 - m_err) <= X))
         {
@@ -442,9 +433,7 @@ class Orientation
         {
             face = "B";
         }
-        if ( (((180 + m_err) >= Y && (180 - m_err) <= Y) || ((-180 + m_err) >= Y && (-180 - m_err) <= Y))
-          && ((-120 + m_err) >= X && (-120 - m_err) <= X)
-        )
+        if ((((180 + m_err) >= Y && (180 - m_err) <= Y) || ((-180 + m_err) >= Y && (-180 - m_err) <= Y)) && ((-120 + m_err) >= X && (-120 - m_err) <= X))
         {
             face = "C";
         }
@@ -460,17 +449,25 @@ class Orientation
         {
             face = "F";
         }
-         if ( (((180 + m_err) >= Y && (180 - m_err) <= Y) || ((-180 + m_err) >= Y && (-180 - m_err) <= Y))
-          && (((180 + m_err) >= X && (180 - m_err) <= X) || ((-180 + m_err) >= X && (-180 - m_err) <= X))
-        )
+        if ((((180 + m_err) >= Y && (180 - m_err) <= Y) || ((-180 + m_err) >= Y && (-180 - m_err) <= Y)) && (((180 + m_err) >= X && (180 - m_err) <= X) || ((-180 + m_err) >= X && (-180 - m_err) <= X)))
         {
             face = "H";
         }
         if (((120 + m_err) >= Y && (120 - m_err) <= Y) && ((120 + m_err) >= X && (120 - m_err) <= X))
         {
             face = "G";
-        } 
+        }
 
         return face;
+    }
+
+    void on_face_change(void (*notify)(char *))
+    {
+        char *face = this->get_polytt_face();
+        if (face != _ant_face)
+        {
+            _ant_face = face;
+            notify(face);
+        }
     }
 };

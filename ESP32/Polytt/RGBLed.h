@@ -14,10 +14,23 @@ class RGBLed
     int _green_c = 0;
     int _blue_c = 0;
 
+    int _red = 0;
+    int _green = 0;
+    int _blue = 0;
+
     int _cont;
     bool _increase = true;
 
-    bool _blick_on = true; 
+    void show() 
+    {
+        analogWrite(this->pin_red, this->_red);
+        analogWrite(this->pin_green, this->_green);
+        analogWrite(this->pin_blue, this->_blue);
+
+        this->_red = 0;
+        this->_green = 0;
+        this->_blue = 0; 
+    }
 
   public:
     RGBLed(byte _pin_red, byte _pin_green, byte _pin_blue)
@@ -55,32 +68,67 @@ class RGBLed
 
     void loop()
     {
+        this->show();
     }
 
     void color(int R, int G, int B)
     {
-        analogWrite(this->pin_red, ((R * (255 - this->_red_c)) / 255));
-        analogWrite(this->pin_green, ((G * (255 - this->_green_c)) / 255));
-        analogWrite(this->pin_blue, ((B * (255 - this->_blue_c)) / 255));
+        this->_red = ((R * (255 - this->_red_c)) / 255);
+        this->_green = ((G * (255 - this->_green_c)) / 255);
+        this->_blue = ((B * (255 - this->_blue_c)) / 255);
     }
 
-    void red() { this->color(255, 0, 0); } 
-    void green() { this->color(0, 255, 0); } 
-    void blue() { this->color(0, 0, 255); } 
-    void cyan() { this->color(0, 255, 255); } 
-    void yellow() { this->color(255, 255, 0); } 
-    void magenta() { this->color(255, 0, 255); } 
-    void white() { this->color(255, 255, 255); } 
+    void red() { this->color(255, 0, 0); }
+    void green() { this->color(0, 255, 0); }
+    void blue() { this->color(0, 0, 255); }
+    void cyan() { this->color(0, 255, 255); }
+    void yellow() { this->color(255, 255, 0); }
+    void magenta() { this->color(255, 0, 255); }
+    void white() { this->color(255, 255, 255); }
     void black() { this->color(0, 0, 0); }
 
-    void blink(int R, int G, int B, int _delay)
+    void blink_red(int _blinks = 10, int _delay = 200)
     {
+        this->blink(255, 0, 0, _blinks, _delay);
+    }
+    void blink_green(int _blinks = 10, int _delay = 200)
+    {
+        this->blink(0, 255, 0, _blinks, _delay);
+    }
+    void blink_blue(int _blinks = 10, int _delay = 200)
+    {
+        this->blink(0, 0, 255, _blinks, _delay);
+    }
+    void blink_cyan(int _blinks = 10, int _delay = 200)
+    {
+        this->blink(0, 255, 255, _blinks, _delay);
+    }
+    void blink_yellow(int _blinks = 10, int _delay = 200)
+    {
+        this->blink(255, 255, 0, _blinks, _delay);
+    }
+    void blink_magenta(int _blinks = 10, int _delay = 200)
+    {
+        this->blink(255, 0, 255, _blinks, _delay);
+    }
+    void blink_white(int _blinks = 10, int _delay = 200)
+    {
+        this->blink(255, 255, 255, _blinks, _delay);
+    }
+    void blink_black(int _blinks = 10, int _delay = 200)
+    {
+        this->blink(0, 0, 0, _blinks, _delay);
+    }
 
-        this->color(
-            this->_blick_on ? R : 0,
-            this->_blick_on ? G : 0,
-            this->_blick_on ? B : 0);
-        this->_blick_on = !this->_blick_on;
-        delay(_delay);
+    void blink(int R, int G, int B, int _blinks = 10, int _delay = 200)
+    {
+        int i;
+        for (i = 0; i < _blinks; i = i + 1)
+        {
+            this->color( (i % 2 != 0) ? R : 0, (i % 2 != 0) ? G : 0, (i % 2 != 0) ? B : 0);
+            this->show();
+            delay(_delay);
+        }
+        this->black();
     }
 };
