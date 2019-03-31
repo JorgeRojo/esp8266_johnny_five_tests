@@ -8,4 +8,27 @@
     <h1><%= title %></h1>
     <p>Welcome to <%= title %></p>
   </body>
+
+  <script src="/socket.io/socket.io.js"></script>
+  <script>
+    var socket = io('http://localhost:3000');
+    (() => { 
+      socket.on('face_ok', function (data) { 
+        console.warn('>>>>------------> face_ok ', data);   
+      });
+
+
+      const faces = ['X','A','B','C','D','E','F','G','H'];
+      let i = 0;
+      setInterval(() => {
+        socket.emit('face', {face: faces[i]});
+        i++;
+        if(i >= faces.length) {
+          i=0;
+        }
+      }, 1000);
+
+
+    })();
+  </script>
 </html>
