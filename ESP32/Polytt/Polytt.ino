@@ -1,76 +1,117 @@
 #include "Arduino.h"
 #include "./Storage.h"
+#include "./RGBLed.h"
 #include "./Bluetooth.h"
 #include "./Orientation.h"
 #include "./Battery.h"
+#include "./WifiNotifier.h"
+
 #define PIN_BATTERY A0
-#define PIN_LED 2
+#define PIN_LED_RED 23
+#define PIN_LED_GREEN 18
+#define PIN_LED_BLUE 19
 
-
-#define PIN_LED_ON 26
-#define PIN_LED_BAT_LEVEL_100 18
-#define PIN_LED_BAT_LEVEL_075 19
-#define PIN_LED_BAT_LEVEL_040 23
-
-
+RGBLed rgbled = RGBLed(PIN_LED_RED, PIN_LED_GREEN, PIN_LED_BLUE);
 Storage storage = Storage(false);
-Orientation orientation = Orientation(PIN_LED, storage);
-Bluetooth bluetooth = Bluetooth("Polytt_9R4W7bvff9", storage);
 Battery battery = Battery(PIN_BATTERY);
+Orientation orientation = Orientation(rgbled, storage);
+WifiNotifier wifi = WifiNotifier(rgbled, storage);
+Bluetooth bluetooth = Bluetooth(storage);
 
+void wifi_battery_level_notify(float level)
+{
+    wifi.battery_level_notify(level);
+}
 
-char* ant_face = "";
+void wifi_mpu_face_notify(char *face)
+{
+    wifi.mpu_face_notify(face);
+}
 
-
-
-
+std::string get_polytt_id()
+{
+    uint64_t chipid = ESP.getEfuseMac();
+    uint16_t chip = (uint16_t)(chipid >> 32);
+    char uid[23];
+    snprintf(uid, 23, "POLYTT-%04X%08X", chip, (uint32_t)chipid);
+    return std::string(uid);
+}
 
 void setup()
 {
-  Serial.begin(115200);
-  while (!Serial) continue;
-   
+    Serial.begin(115200);
+    while (!Serial)
+    {
+        continue;
+        delay(500);
+    }
 
-  bluetooth.start();
-  delay(500);
+    delay(500);
 
+    Serial.println();
+    Serial.println("************** POLYTT SETUP **************");
+    Serial.println();
 
-  orientation.start();
-  delay(500);
+    std::string uid = get_polytt_id();
+    Serial.println(uid.c_str());
 
-  //LEDS
-  pinMode(PIN_LED_ON, OUTPUT);
-  pinMode(PIN_LED_BAT_LEVEL_100, OUTPUT);
-  pinMode(PIN_LED_BAT_LEVEL_075, OUTPUT);
-  pinMode(PIN_LED_BAT_LEVEL_040, OUTPUT);
+    battery.start();
+    rgbled.start();
+    orientation.start();
+
+    bluetooth.setup(uid);
+    wifi.setup(uid);
+
+    delay(500);
 }
-
 
 void loop()
 {
+    // Battery --------------------------------
+    float batteryLevel = battery.loop();
+    // Serial.println(batteryLevel); 
+    if (batteryLevel <= 30)
+    {
+        rgbled.yellow();
+    }
+    if (batteryLevel <= 10)
+    {
+        rgbled.red();
+    }
 
-  bluetooth.loop();
+    // orientation ----------------------------
+    if (batteryLevel > 10)
+    {
+        orientation.loop();
+    }
 
-  orientation.loop();
+    if (orientation.state == 4)
+    {
+        battery.on_level_change(wifi_battery_level_notify);
+        orientation.on_face_change(wifi_mpu_face_notify);
 
-  char* face = orientation.get_polytt_face();
-  if ( face != "" && face != ant_face) {
-    Serial.print("FACE\t");
-    Serial.println(face);
-    ant_face = face;
-  }
-
-  //indicator
-  if (orientation.state >= 4) {
-    digitalWrite(PIN_LED_ON, HIGH);
-  }
-
-
-  //Battery level inidicators
-  float batteryLevel = battery.level();
-  digitalWrite(PIN_LED_BAT_LEVEL_100, batteryLevel > 90 ? HIGH : LOW);
-  digitalWrite(PIN_LED_BAT_LEVEL_075, batteryLevel > 75 ? HIGH : LOW);
-  digitalWrite(PIN_LED_BAT_LEVEL_040, batteryLevel > 40 ? HIGH : LOW);
+        // Wifi  ----------------------------------
+        if (!wifi.on)
+        {
+            wifi.start();
+        }
+        wifi.loop();
 
 
+        // BLE  -----------------------------------
+        if (!wifi.on)
+        {
+            bluetooth.start();
+            rgbled.blue();
+        }
+        else
+        {
+            bluetooth.stop();
+        } 
+        bluetooth.loop();
+
+    }
+
+    rgbled.loop();
+    delay(100);
 }
