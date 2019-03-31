@@ -1,6 +1,6 @@
 #include "Arduino.h"
 #include <analogWrite.h>
-#define RAW_MAX 1600.0 // initial max row
+#define RAW_MAX 1800.0 // initial max row
 #define RAW_MIN 1120.0 // initial min row
 #define RAW_EM 5       // row margin error
 
@@ -45,7 +45,8 @@ class Battery
         if (_last > _max) 
         {
             _max = _last;
-        } 
+        }
+
  
         _level = (100 * (_last - RAW_MIN)) / (_max - RAW_MIN);
 
@@ -59,6 +60,8 @@ class Battery
         {
             _last_level = _level;
             notify(_level);
+            Serial.print("BATTERY -> RAW\t");
+            Serial.println(_last);
         }
     }
 };

@@ -1,6 +1,14 @@
-#include <Arduino.h>
+#include <Arduino.h> 
 #include <WiFi.h>
+#include <WiFiMulti.h>
+#include <WiFiClientSecure.h> 
+#include <WebSocketsClient.h>
 //https://github.com/Links2004/arduinoWebSockets
+//https://github.com/Links2004/arduinoWebSockets/blob/master/examples/esp32/WebSocketClient/WebSocketClient.ino
+
+
+WiFiMulti WiFiMulti;
+WebSocketsClient webSocket;
 
 class WifiNotifier
 {

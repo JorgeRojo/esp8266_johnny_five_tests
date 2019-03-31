@@ -69,12 +69,7 @@ void loop()
 {
     // Battery --------------------------------
     float batteryLevel = battery.loop();
-    // Serial.println(batteryLevel);
-
-    if (batteryLevel >= 100)
-    {
-        rgbled.green();
-    }
+    // Serial.println(batteryLevel); 
     if (batteryLevel <= 30)
     {
         rgbled.yellow();
