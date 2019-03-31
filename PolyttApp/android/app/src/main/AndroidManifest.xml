@@ -5,6 +5,14 @@
     <uses-permission android:name="android.permission.WRITE_EXTERNAL_STORAGE" /> 
     <uses-permission android:name="android.permission.SYSTEM_ALERT_WINDOW"/>
 
+    <uses-permission android:name="android.permission.BLUETOOTH"/>
+    <uses-permission android:name="android.permission.BLUETOOTH_ADMIN"/>
+    <uses-permission-sdk-23 android:name="android.permission.ACCESS_COARSE_LOCATION"/>
+    <!-- Add this line if your application always requires BLE. More info can be found on:
+         https://developer.android.com/guide/topics/connectivity/bluetooth-le.html#permissions 
+      -->
+    <uses-feature android:name="android.hardware.bluetooth_le" android:required="true"/>
+
     <application
       android:name=".MainApplication"
       android:label="@string/app_name"
@@ -20,7 +28,7 @@
         <intent-filter>
             <action android:name="android.intent.action.MAIN" />
             <category android:name="android.intent.category.LAUNCHER" />
-     <action android:name="android.intent.action.DOWNLOAD_COMPLETE"/>
+            <action android:name="android.intent.action.DOWNLOAD_COMPLETE"/>
         </intent-filter>
       </activity>
       <activity android:name="com.facebook.react.devsupport.DevSettingsActivity" />

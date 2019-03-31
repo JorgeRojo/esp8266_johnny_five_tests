@@ -1,5 +1,6 @@
 import { AppRegistry } from 'react-native';
-import { name as appName } from './app.json'; 
+import { name as appName } from './app.json';  
+import { BleManager  } from "react-native-ble-plx";
 
 import App from '~/components/App'; 
   
