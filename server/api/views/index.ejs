@@ -21,7 +21,8 @@
       const faces = ['X','A','B','C','D','E','F','G','H'];
       let i = 0;
       setInterval(() => {
-        socket.emit('face', {face: faces[i]});
+        socket.emit('face', faces[i]);
+        socket.emit('battery', i * 10);
         i++;
         if(i >= faces.length) {
           i=0;
