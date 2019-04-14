@@ -20,7 +20,6 @@ export default class Home extends Component<HomeProps> {
 const styles = StyleSheet.create({
     wrapper: {
         flex: 1,
-        justifyContent: 'center',
         alignItems: 'center',
         backgroundColor: '#F5FCFF',
         padding: 32,

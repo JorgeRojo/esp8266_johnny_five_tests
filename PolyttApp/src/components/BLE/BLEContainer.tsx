@@ -9,7 +9,6 @@ import BLE from "./BLE";
 
 const SERVICE_UUID = "91e88e4d-66b6-40b7-aa14-d5af542a7f0b";
 const CHARACTERISTIC_UUID = "19a09ba4-51f4-45eb-a2d9-bec08dad539e";
-const DEVICE_NAME = "Polytt_9R4W7bvff9";
 
 
 class BLEContainer extends PureComponent<{
@@ -58,16 +57,16 @@ class BLEContainer extends PureComponent<{
 
     scanAndConnect() {
 
-        this.manager.startDeviceScan(null, null, (error, device) => {
-            this.info("scanning...");
+        this.manager.startDeviceScan(null, null, (error, device) => { 
+            this.info(`scanning... ${device && device.name}`);
 
             if (error) {
                 this.error(error.message);
                 return;
             }
 
-            if (device && device.name === DEVICE_NAME) {
-                this.info("connecting...");
+            if (device && device.name && device.name.match(/^POLYTTE-/g)) {
+                this.info(`connecting... ${device.name}`);
                 this.manager.stopDeviceScan();
 
                 device
@@ -89,6 +88,9 @@ class BLEContainer extends PureComponent<{
                                 (error, characteristic) => {
                                     if (error) {
                                         this.error(error.message);
+                                        this.isConnected = false;
+                                        device.cancelConnection();
+                                        this.scanAndConnect();
                                         return;
                                     }
                                     if (characteristic && characteristic.value) {
@@ -100,6 +102,8 @@ class BLEContainer extends PureComponent<{
                         error => {
                             this.error(error.message);
                             this.isConnected = false;
+                            device.cancelConnection();
+                            this.scanAndConnect();
                         }
                     );
             }

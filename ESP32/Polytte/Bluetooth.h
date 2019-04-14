@@ -18,7 +18,10 @@ BLECharacteristic *_ble_p_characteristic = NULL;
 BLEServer *_ble_p_server = NULL;
 String _ble_tmp_msg = "";
 
-void parse_msg(char *msg)
+void (*_on_wifi_data)(const char *, const char *);
+std::vector<String> (*_on_get_wifi_list)();
+
+void _parse_msg(char *msg)
 {
     StaticJsonDocument<200> doc;
     DeserializationError error = deserializeJson(doc, msg);
@@ -32,6 +35,11 @@ void parse_msg(char *msg)
 
     const char *wifi_ssid = doc["wifi_ssid"];
     const char *wifi_pass = doc["wifi_pass"];
+
+    if (_on_wifi_data && wifi_ssid && wifi_pass)
+    {
+        _on_wifi_data(wifi_ssid, wifi_pass);
+    }
 
     Serial.print("BLE -> wifi ssid: ");
     Serial.println(wifi_ssid);
@@ -81,7 +89,7 @@ class ClientCallbacks : public BLECharacteristicCallbacks
                 ms.GlobalReplace("[^<]*<MSG> *", "");
                 ms.GlobalReplace("<#MSG>.*", "");
 
-                parse_msg(c_msg);
+                _parse_msg(c_msg);
 
                 _ble_tmp_msg = "";
             }
@@ -91,11 +99,10 @@ class ClientCallbacks : public BLECharacteristicCallbacks
 
 class ServerCallbacks : public BLEServerCallbacks
 {
-
     void onConnect(BLEServer *_ble_p_server)
     {
         _ble_device_connected = true;
-        BLEDevice::startAdvertising();
+        BLEDevice::startAdvertising(); 
     };
 
     void onDisconnect(BLEServer *_ble_p_server)
@@ -107,40 +114,43 @@ class ServerCallbacks : public BLEServerCallbacks
 class Bluetooth
 {
 
-  private: 
-    BLEService *ble_service = NULL;
+  private:
+    std::string _device_name;
+    BLEService *_ble_service = NULL;
+    RGBLed _rgbled = RGBLed(0, 0, 0);
     bool on = false;
 
   public:
-    Bluetooth(Storage &storage)
+    Bluetooth(RGBLed &rgbled, Storage &storage)
     {
+        this->_rgbled = rgbled;
         _ble_storage = storage;
-    } 
-      
-    void setup(std::string device_name)
-    { 
+    }
 
+    void setup(std::string device_name)
+    {
+        _device_name = device_name;
         _ble_storage.load(false);
 
         // Create the BLE Device
-        BLEDevice::init( device_name );
+        BLEDevice::init(_device_name);
 
         // Create the BLE Server
         _ble_p_server = BLEDevice::createServer();
         _ble_p_server->setCallbacks(new ServerCallbacks());
 
         // Create the BLE Service
-        this->ble_service = _ble_p_server->createService(SERVICE_UUID);
+        this->_ble_service = _ble_p_server->createService(SERVICE_UUID);
 
         // Create a BLE Characteristic
-        _ble_p_characteristic = this->ble_service->createCharacteristic(
+        _ble_p_characteristic = this->_ble_service->createCharacteristic(
             CHARACTERISTIC_UUID,
             BLECharacteristic::PROPERTY_READ |
                 BLECharacteristic::PROPERTY_WRITE |
                 BLECharacteristic::PROPERTY_NOTIFY |
                 BLECharacteristic::PROPERTY_INDICATE);
 
-        // Create BLE Client Service
+        // Create BLE Client Servicew
         _ble_p_characteristic->setCallbacks(new ClientCallbacks());
 
         // Create a BLE Descriptor
@@ -154,7 +164,7 @@ class Bluetooth
         if (!this->on)
         {
             // Start the service
-            this->ble_service->start();
+            this->_ble_service->start();
 
             // Start advertising
             BLEAdvertising *p_advertising = BLEDevice::getAdvertising();
@@ -169,20 +179,11 @@ class Bluetooth
         }
     }
 
-    void sendToDevice(std::string message)
-    {
-        if (_ble_device_connected)
-        {
-            _ble_p_characteristic->setValue(message);
-            _ble_p_characteristic->notify();
-        }
-    }
-
     void stop()
     {
         if (this->on)
         {
-            this->ble_service->stop();
+            this->_ble_service->stop();
             this->on = false;
             Serial.println("BLE -> STOP");
         }
@@ -192,6 +193,13 @@ class Bluetooth
     {
         if (this->on)
         {
+
+        this->_rgbled.blue();
+            if (_ble_device_connected)
+            {
+                this->_rgbled.blink_blue(2, 100);
+            }
+
             // disconnecting
             if (!_ble_device_connected && _ble_old_device_connected)
             {
@@ -204,8 +212,31 @@ class Bluetooth
             // connecting
             if (_ble_device_connected && !_ble_old_device_connected)
             {
-                _ble_old_device_connected = _ble_device_connected;
+                _ble_old_device_connected = _ble_device_connected; 
+
+                // get wifi list
+                delay(500);
+                _ble_p_characteristic->setValue("<MSG>");
+                _ble_p_characteristic->notify();
+                std::vector<String> list = _on_get_wifi_list();
+                for (int i = 0; i < list.size(); i++)
+                {
+                    _ble_p_characteristic->setValue( list[i].c_str() );
+                    _ble_p_characteristic->notify();
+                }
+                _ble_p_characteristic->setValue("</MSG>");
+                _ble_p_characteristic->notify();
             }
         }
+    }
+
+    void on_wifi_data(void (*wifi_connect)(const char *, const char *))
+    {
+        _on_wifi_data = wifi_connect;
+    }
+
+    void on_connect(std::vector<String> (*get_wifi_list)())
+    {
+        _on_get_wifi_list = get_wifi_list;
     }
 };

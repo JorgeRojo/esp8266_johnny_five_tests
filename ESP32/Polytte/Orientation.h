@@ -45,6 +45,9 @@ class Orientation
     RGBLed _rgbled = RGBLed(0, 0, 0);
     Storage _storage = Storage(false);
 
+
+    void (*_face_notify)(char *);
+    
     char *_ant_face = "X";
 
     void blink()
@@ -287,13 +290,13 @@ class Orientation
                 mpu.dmpGetQuaternion(&this->q, this->fifoBuffer);
                 mpu.dmpGetGravity(&this->gravity, &this->q);
                 mpu.dmpGetYawPitchRoll(this->ypr, &this->q, &this->gravity);
-                // Serial.print("YPR\t");
-                // Serial.print(this->ypr[0] * 180 / M_PI);
-                // Serial.print("\t");
-                // Serial.print(this->ypr[1] * 180 / M_PI);
-                // Serial.print("\t");
-                // Serial.print(this->ypr[2] * 180 / M_PI);
-                // Serial.println();
+//                 Serial.print("YPR\t");
+//                 Serial.print(this->ypr[0] * 180 / M_PI);
+//                 Serial.print("\t");
+//                 Serial.print(this->ypr[1] * 180 / M_PI);
+//                 Serial.print("\t");
+//                 Serial.print(this->ypr[2] * 180 / M_PI);
+//                 Serial.println();
 
                 //Acceleration
                 mpu.dmpGetQuaternion(&this->q, this->fifoBuffer);
@@ -307,7 +310,19 @@ class Orientation
                 // Serial.print("\t");
                 // Serial.print(this->aaReal.z);
                 // Serial.println();
+                
             }
+
+            
+            if(_face_notify) { 
+                char *face = this->get_polytt_face();
+                if (face != _ant_face)
+                { 
+                    _ant_face = face;
+                    _face_notify(face);
+                }
+            } 
+       
         }
     }
 
@@ -405,6 +420,7 @@ class Orientation
             Serial.println("MPU -> State exceeded!!");
             break;
         }
+
     }
 
     float *get_ypr()
@@ -424,24 +440,26 @@ class Orientation
         char *face = "X";
         float Y = this->ypr[1] * 180 / M_PI;
         float X = this->ypr[2] * 180 / M_PI;
+        
+//        Serial.print("Y "); Serial.print(Y); Serial.print(" X "); Serial.println(X);
 
         if (((0 + m_err) >= Y && (0 - m_err) <= Y) && ((0 + m_err) >= X && (0 - m_err) <= X))
         {
             face = "A";
         }
-        if (((-60 + m_err) >= Y && (-60 - m_err) <= Y) && ((-60 + m_err) >= X && (-60 - m_err) <= X))
+        if (((-30 + m_err) >= Y && (-30 - m_err) <= Y) && ((-60 + m_err) >= X && (-60 - m_err) <= X))
         {
             face = "B";
         }
-        if ((((180 + m_err) >= Y && (180 - m_err) <= Y) || ((-180 + m_err) >= Y && (-180 - m_err) <= Y)) && ((-120 + m_err) >= X && (-120 - m_err) <= X))
+        if ((((180 + m_err) >= Y && (180 - m_err) <= Y) || ((-180 + m_err) >= Y && (-180 - m_err) <= Y)) && ((-120 + m_err) >= X && (-120 - m_err) <= X))       
         {
             face = "C";
         }
-        if (((60 + m_err) >= Y && (60 - m_err) <= Y) && ((-60 + m_err) >= X && (-60 - m_err) <= X))
+        if (((60 + m_err) >= Y && (60 - m_err) <= Y) && ((0 + m_err) >= X && (0 - m_err) <= X))
         {
             face = "D";
         }
-        if (((-120 + m_err) >= Y && (-120 - m_err) <= Y) && ((120 + m_err) >= X && (120 - m_err) <= X))
+        if (((-120 + m_err) >= Y && (-120 - m_err) <= Y) && (((180 + m_err) >= X && (180 - m_err) <= X) || ((-180 + m_err) >= X && (-180 - m_err) <= X)))
         {
             face = "E";
         }
@@ -463,11 +481,6 @@ class Orientation
 
     void on_face_change(void (*notify)(char *))
     {
-        char *face = this->get_polytt_face();
-        if (face != _ant_face)
-        {
-            _ant_face = face;
-            notify(face);
-        }
+        _face_notify = notify; 
     }
 };
