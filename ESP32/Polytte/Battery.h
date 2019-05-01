@@ -50,6 +50,8 @@ class Battery
         }
 
         _level = (100 * (_last - RAW_MIN)) / (_max - RAW_MIN);
+        
+        Serial.println(_level);
 
         return _level;
     }

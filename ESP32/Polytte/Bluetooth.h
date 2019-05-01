@@ -7,6 +7,7 @@
 
 // See the following for generating UUIDs:
 // https://www.uuidgenerator.net/
+//https://github.com/espressif/arduino-esp32/blob/master/libraries/SimpleBLE/src/SimpleBLE.h
 
 #define SERVICE_UUID "91e88e4d-66b6-40b7-aa14-d5af542a7f0b"
 #define CHARACTERISTIC_UUID "19a09ba4-51f4-45eb-a2d9-bec08dad539e"
@@ -183,6 +184,7 @@ class Bluetooth
     {
         if (this->on)
         {
+            btStop();
             this->_ble_service->stop();
             this->on = false;
             Serial.println("BLE -> STOP");
