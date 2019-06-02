@@ -20,7 +20,7 @@
 #define PWR_MGMT 0x6B //SLEEPY TIME
 #define INT_STATUS 0x3A
 #define MPU6050_ADDRESS 0x68 //AD0 is 0
- 
+
 int startTime, state = 0;
 
 // class default I2C address is 0x68
@@ -67,7 +67,7 @@ void mpuConfiguration(int sens)
     writeByte(MPU6050_ADDRESS, 0x37, 140);             // now INT pin is active low
     writeByte(MPU6050_ADDRESS, INT_ENABLE, 0x40);      //write register 0x38, bit 6 (0x40), to enable motion detection interrupt.
     writeByte(MPU6050_ADDRESS, PWR_MGMT, 8);           // 101000 - Cycle & disable TEMP SENSOR
-    writeByte(MPU6050_ADDRESS, 0x6C, 0x01);               // Disable Gyros
+    writeByte(MPU6050_ADDRESS, 0x6C, 7);               // Disable Gyros
 }
 
 void setup()
@@ -90,22 +90,20 @@ void setup()
                        ? "MPU6050 connection successful"
                        : "MPU6050 connection failed");
 
-                       
+    if (!mpuReady)
+        return;
 
+    _mpu_state_0();
+    _mpu_state_1();
+    _mpu_state_2();
+    _mpu_state_3();
+    while(state == 4){}  
+    _mpu_state_5();
 }
 
-
-
 void loop()
-{  
-    if (mpuReady) { 
-        _mpu_state_0();
-        _mpu_state_1();
-        _mpu_state_2(); 
-        _mpu_state_3();
-        _mpu_state_4(); 
-        _mpu_state_5();
-    } 
+{
+    _mpu_state_4();
 }
 
 ///////////////////////////////////   MPU CALIBRATION   ////////////////////////////////////
@@ -151,8 +149,7 @@ void meansensors()
 }
 
 void calibration()
-{ 
-    
+{
     ax_offset = -mean_ax / 8;
     ay_offset = -mean_ay / 8;
     az_offset = (16384 - mean_az) / 8;
@@ -209,65 +206,10 @@ void calibration()
     }
 }
 
-void initDMP() {
-     // Iniciar DMP
-    Serial.println("Seting offsets and Initializing DMP...");
-    devStatus = mpu.dmpInitialize();
-
-
-    // Activar DMP
-    if (devStatus == 0)
-    {
-        Serial.println("Enabling DMP...");
-        mpu.setDMPEnabled(true);
-
-        mpuIntStatus = mpu.getIntStatus();
-
-        Serial.println("DMP ready!");
-        dmpReady = true;
-
-        // get expected DMP packet size for later comparison
-        packetSize = mpu.dmpGetFIFOPacketSize();
-    }
-    else
-    {
-        // ERROR!
-        // 1 = initial memory load failed
-        // 2 = DMP configuration updates failed
-        // (if it's going to break, usually the code will be 1)
-        Serial.print("DMP Initialization failed (code ");
-        Serial.print(devStatus);
-        Serial.println(" )");
-    }
-}
-
-void stopDMP() {
-    mpu.reset();
-    mpuConfiguration(1);
-    // mpu.setSleepEnabled(true);
-}
-
-
-
 void _mpu_state_0()
 {
-
-    //1021	3217	1807	-39	19	0
-
     if (state != 0)
-        return; 
-
-
-    //saved calibration
-    mpu.setXAccelOffset(1021);
-    mpu.setYAccelOffset(3217);
-    mpu.setZAccelOffset(1807);
-    mpu.setXGyroOffset(-39);
-    mpu.setYGyroOffset(19);
-    mpu.setZGyroOffset(0);
-    state = 3; 
-    return;
-
+        return;
     Serial.println("Reading sensors for first time...");
 
     // reset offsets
@@ -327,13 +269,6 @@ void _mpu_state_2()
     Serial.println("Check that your sensor readings are close to 0 0 16384 0 0 0");
     Serial.println("If calibration was succesful write down your offsets so you can set them in your projects using something similar to mpu.setXAccelOffset(youroffset)");
 
-    mpu.setXAccelOffset(ax_offset);
-    mpu.setYAccelOffset(ay_offset);
-    mpu.setZAccelOffset(az_offset);
-    mpu.setXGyroOffset(gx_offset);
-    mpu.setYGyroOffset(gy_offset);
-    mpu.setZGyroOffset(gz_offset); 
-
     state++;
     delay(500);
 }
@@ -343,7 +278,41 @@ void _mpu_state_3()
     if (state != 3)
         return;
 
-    initDMP();
+    // Iniciar DMP
+    Serial.println("Seting offsets and Initializing DMP...");
+    devStatus = mpu.dmpInitialize();
+
+    mpu.setXAccelOffset(ax_offset);
+    mpu.setYAccelOffset(ay_offset);
+    mpu.setZAccelOffset(az_offset);
+    mpu.setXGyroOffset(gx_offset);
+    mpu.setYGyroOffset(gy_offset);
+    mpu.setZGyroOffset(gz_offset);
+
+    // Activar DMP
+    if (devStatus == 0)
+    {
+        Serial.println("Enabling DMP...");
+        mpu.setDMPEnabled(true);
+
+        mpuIntStatus = mpu.getIntStatus();
+
+        Serial.println("DMP ready!");
+        dmpReady = true;
+
+        // get expected DMP packet size for later comparison
+        packetSize = mpu.dmpGetFIFOPacketSize();
+    }
+    else
+    {
+        // ERROR!
+        // 1 = initial memory load failed
+        // 2 = DMP configuration updates failed
+        // (if it's going to break, usually the code will be 1)
+        Serial.print("DMP Initialization failed (code ");
+        Serial.print(devStatus);
+        Serial.println(" )");
+    }
 
     state++;
     delay(500);
@@ -401,24 +370,23 @@ void _mpu_state_4()
         // Serial.print("\t");
         // Serial.println(aaReal.z);
 
-        stopDMP();
         state++;
         delay(500);
     }
 }
 
- 
 void _mpu_state_5()
 {
     if (state != 5)
         return;
-  
+
     int total = esp_timer_get_time() - startTime;
-  
+    Serial.println(total);
+
     Serial.println("Sleeping");
     adc_power_off(); // adc power off disables wifi entirely, upstream bug
     esp_sleep_enable_ext0_wakeup(GPIO_NUM_15, 0);
     delay(500); //1 = High, 0 = Low
     adc_power_off();
-    esp_deep_sleep_start(); 
+    esp_deep_sleep_start();
 }

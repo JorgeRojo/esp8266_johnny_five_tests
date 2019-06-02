@@ -5,6 +5,7 @@
 #include <driver/adc.h>
 // #include "./Storage.h"
 
+
 //GND - GND
 //VCC - VCC
 //SDA - Pin A4
@@ -20,8 +21,9 @@
 #define PWR_MGMT 0x6B //SLEEPY TIME
 #define INT_STATUS 0x3A
 #define MPU6050_ADDRESS 0x68 //AD0 is 0
+
  
-int startTime, state = 0;
+int startTime, state = 0; 
 
 // class default I2C address is 0x68
 // specific I2C addresses may be passed as a parameter here
@@ -46,17 +48,29 @@ VectorInt16 aaWorld; // [x, y, z]
 VectorFloat gravity; // [x, y, z]
 float ypr[3];        // [yaw, pitch, roll]
 
+
 void writeByte(uint8_t address, uint8_t subAddress, uint8_t data)
-{
+{ 
     Wire.begin();
     Wire.beginTransmission(address); // Initialize the Tx buffer
     Wire.write(subAddress);          // Put slave register address in Tx buffer
     Wire.write(data);                // Put data in Tx buffer
     Wire.endTransmission();          // Send the Tx buffer
+} 
+
+uint8_t readByte(uint8_t address, uint8_t subAddress)
+{
+    uint8_t data;                          // `data` will store the register data
+    Wire.beginTransmission(address);       // Initialize the Tx buffer
+    Wire.write(subAddress);                // Put slave register address in Tx buffer
+    Wire.endTransmission(false);           // Send the Tx buffer, but send a restart to keep connection alive
+    Wire.requestFrom(address, (uint8_t)1); // Read one byte from slave register address
+    data = Wire.read();                    // Fill Rx buffer with result
+    return data;                           // Return data read from slave register
 }
 
 void mpuConfiguration(int sens)
-{
+{ 
     writeByte(MPU6050_ADDRESS, 0x6B, 0x00);
     writeByte(MPU6050_ADDRESS, SIGNAL_PATH_RESET, 0x07); //Reset all internal signal paths in the MPU-6050 by writing 0x07 to register 0x68;
     // writeByte( MPU6050_ADDRESS, I2C_SLV0_ADDR, 0x20);//write register 0x37 to select how to use the interrupt pin. For an active high, push-pull signal that stays until register (decimal) 58 is read, write 0x20.
@@ -67,11 +81,25 @@ void mpuConfiguration(int sens)
     writeByte(MPU6050_ADDRESS, 0x37, 140);             // now INT pin is active low
     writeByte(MPU6050_ADDRESS, INT_ENABLE, 0x40);      //write register 0x38, bit 6 (0x40), to enable motion detection interrupt.
     writeByte(MPU6050_ADDRESS, PWR_MGMT, 8);           // 101000 - Cycle & disable TEMP SENSOR
-    writeByte(MPU6050_ADDRESS, 0x6C, 0x01);               // Disable Gyros
+    writeByte(MPU6050_ADDRESS, 0x6C, 7);               // Disable Gyros
+}
+ 
+void waitForReady()
+{
+    // wait for ready
+    while (Serial.available() && Serial.read())
+        ; // empty buffer
+    while (!Serial.available())
+    {
+        Serial.println("Send any character to start sketch.");
+        delay(1500);
+    }
+    while (Serial.available() && Serial.read())
+        ; // empty buffer again
 }
 
 void setup()
-{
+{   
 
     startTime = esp_timer_get_time();
 
@@ -83,30 +111,38 @@ void setup()
     // initialize device
     mpu.initialize();
 
+    // wait for ready
+    //waitForReady();
+  
+
     // Comprobar  conexion
     Serial.println("Testing device connections...");
     mpuReady = mpu.testConnection();
-    Serial.println(mpuReady
-                       ? "MPU6050 connection successful"
-                       : "MPU6050 connection failed");
+    Serial.println( mpuReady 
+        ? "MPU6050 connection successful" 
+        : "MPU6050 connection failed" 
+    );  
+ 
 
-                       
+    if(!mpuReady) return;
+
+    _mpu_state_0();
+    _mpu_state_1();
+    _mpu_state_2();
+    _mpu_state_3();  
+    while(state == 4 ){
+        _mpu_state_4();  
+        delay(500);
+    }
+    _mpu_state_5();   
 
 }
-
-
 
 void loop()
-{  
-    if (mpuReady) { 
-        _mpu_state_0();
-        _mpu_state_1();
-        _mpu_state_2(); 
-        _mpu_state_3();
-        _mpu_state_4(); 
-        _mpu_state_5();
-    } 
+{   
 }
+
+
 
 ///////////////////////////////////   MPU CALIBRATION   ////////////////////////////////////
 int buffersize = 1000; //Amount of readings used to average, make it higher to get more precision but sketch will be slower  (default:1000)
@@ -117,6 +153,7 @@ int giro_deadzone = 1; //Giro error allowed, make it lower to get more precision
 int16_t ax, ay, az, gx, gy, gz;
 int mean_ax, mean_ay, mean_az, mean_gx, mean_gy, mean_gz;
 int ax_offset, ay_offset, az_offset, gx_offset, gy_offset, gz_offset;
+
 
 void meansensors()
 {
@@ -151,8 +188,7 @@ void meansensors()
 }
 
 void calibration()
-{ 
-    
+{
     ax_offset = -mean_ax / 8;
     ay_offset = -mean_ay / 8;
     az_offset = (16384 - mean_az) / 8;
@@ -209,65 +245,9 @@ void calibration()
     }
 }
 
-void initDMP() {
-     // Iniciar DMP
-    Serial.println("Seting offsets and Initializing DMP...");
-    devStatus = mpu.dmpInitialize();
-
-
-    // Activar DMP
-    if (devStatus == 0)
-    {
-        Serial.println("Enabling DMP...");
-        mpu.setDMPEnabled(true);
-
-        mpuIntStatus = mpu.getIntStatus();
-
-        Serial.println("DMP ready!");
-        dmpReady = true;
-
-        // get expected DMP packet size for later comparison
-        packetSize = mpu.dmpGetFIFOPacketSize();
-    }
-    else
-    {
-        // ERROR!
-        // 1 = initial memory load failed
-        // 2 = DMP configuration updates failed
-        // (if it's going to break, usually the code will be 1)
-        Serial.print("DMP Initialization failed (code ");
-        Serial.print(devStatus);
-        Serial.println(" )");
-    }
-}
-
-void stopDMP() {
-    mpu.reset();
-    mpuConfiguration(1);
-    // mpu.setSleepEnabled(true);
-}
-
-
-
 void _mpu_state_0()
-{
-
-    //1021	3217	1807	-39	19	0
-
-    if (state != 0)
-        return; 
-
-
-    //saved calibration
-    mpu.setXAccelOffset(1021);
-    mpu.setYAccelOffset(3217);
-    mpu.setZAccelOffset(1807);
-    mpu.setXGyroOffset(-39);
-    mpu.setYGyroOffset(19);
-    mpu.setZGyroOffset(0);
-    state = 3; 
-    return;
-
+{ 
+    if (state != 0) return;
     Serial.println("Reading sensors for first time...");
 
     // reset offsets
@@ -276,7 +256,7 @@ void _mpu_state_0()
     mpu.setZAccelOffset(0);
     mpu.setXGyroOffset(0);
     mpu.setYGyroOffset(0);
-    mpu.setZGyroOffset(0);
+    mpu.setZGyroOffset(0);  
 
     meansensors();
     state++;
@@ -284,9 +264,8 @@ void _mpu_state_0()
 }
 
 void _mpu_state_1()
-{
-    if (state != 1)
-        return;
+{ 
+    if (state != 1) return;
     Serial.println("Calculating offsets...");
     calibration();
     state++;
@@ -294,9 +273,8 @@ void _mpu_state_1()
 }
 
 void _mpu_state_2()
-{
-    if (state != 2)
-        return;
+{ 
+    if (state != 2) return;
 
     Serial.println("Sensor readings with offsets:\t");
     meansensors();
@@ -327,6 +305,18 @@ void _mpu_state_2()
     Serial.println("Check that your sensor readings are close to 0 0 16384 0 0 0");
     Serial.println("If calibration was succesful write down your offsets so you can set them in your projects using something similar to mpu.setXAccelOffset(youroffset)");
 
+    state++;
+    delay(500);
+}
+ 
+void _mpu_state_3()
+{ 
+    if (state != 3) return; 
+ 
+    // Iniciar DMP
+    Serial.println( "Seting offsets and Initializing DMP..." );
+    devStatus = mpu.dmpInitialize();
+
     mpu.setXAccelOffset(ax_offset);
     mpu.setYAccelOffset(ay_offset);
     mpu.setZAccelOffset(az_offset);
@@ -334,26 +324,41 @@ void _mpu_state_2()
     mpu.setYGyroOffset(gy_offset);
     mpu.setZGyroOffset(gz_offset); 
 
-    state++;
-    delay(500);
-}
+     // Activar DMP
+    if (devStatus == 0)
+    {
+        Serial.println("Enabling DMP...");
+        mpu.setDMPEnabled(true);
+ 
+        mpuIntStatus = mpu.getIntStatus();
 
-void _mpu_state_3()
-{
-    if (state != 3)
-        return;
+        Serial.println("DMP ready! Waiting for first interrupt...");
+        dmpReady = true;
 
-    initDMP();
+        // get expected DMP packet size for later comparison
+        packetSize = mpu.dmpGetFIFOPacketSize();
+    }
+    else
+    {
+        // ERROR!
+        // 1 = initial memory load failed
+        // 2 = DMP configuration updates failed
+        // (if it's going to break, usually the code will be 1)
+        Serial.print("DMP Initialization failed (code ");
+        Serial.print(devStatus);
+        Serial.println(" )");
+    }
 
     state++;
     delay(500);
 }
 
 void _mpu_state_4()
-{
+{ 
     if (state != 4 || !dmpReady)
         return;
 
+   
     mpuIntStatus = mpu.getIntStatus();
 
     // Obtener datos del FIFO
@@ -401,24 +406,26 @@ void _mpu_state_4()
         // Serial.print("\t");
         // Serial.println(aaReal.z);
 
-        stopDMP();
+
         state++;
         delay(500);
     }
 }
-
  
 void _mpu_state_5()
-{
+{ 
     if (state != 5)
         return;
-  
+ 
     int total = esp_timer_get_time() - startTime;
-  
+    Serial.println(total);
+
     Serial.println("Sleeping");
     adc_power_off(); // adc power off disables wifi entirely, upstream bug
     esp_sleep_enable_ext0_wakeup(GPIO_NUM_15, 0);
     delay(500); //1 = High, 0 = Low
     adc_power_off();
-    esp_deep_sleep_start(); 
-}
+    esp_deep_sleep_start();
+    
+
+}   
