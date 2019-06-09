@@ -1,63 +1,65 @@
+#include <Arduino.h>
 #include <EEPROM.h>
-
-typedef struct
-{   
-    // orientation
-    bool calibration_saved;
-    int ax_offset;
-    int ay_offset;
-    int az_offset;
-    int gx_offset;
-    int gy_offset;
-    int gz_offset;
-
-    // wifi
-    char *wifi_ssid;
-    char *wifi_password;
-
-} Storage_t;
-
-int EEPROM_writeAnything(int ee, const Storage_t &data)
-{
-    const byte *p = (const byte *)(const void *)&data;
-    unsigned int i;
-    for (i = 0; i < sizeof(data); i++)
-        EEPROM.write(ee++, *p++);
-    return i;
-}
-
-int EEPROM_readAnything(int ee, Storage_t &data)
-{
-    byte *p = (byte *)(void *)&data;
-    unsigned int i;
-    for (i = 0; i < sizeof(data); i++)
-        *p++ = EEPROM.read(ee++);
-    return i;
-}
 
 class Storage
 {
-  private:
-    byte _pin;
-    bool _reset;
+private:
+    typedef struct
+    {
+        // orientation
+        bool calibration_saved;
+        int ax_offset;
+        int ay_offset;
+        int az_offset;
+        int gx_offset;
+        int gy_offset;
+        int gz_offset;
 
-    void _saveStorage()
+        // wifi
+        char *wifi_ssid;
+        char *wifi_password;
+
+    } Storage_t;
+
+    bool reset;
+
+    int writeAnything(int ee, const Storage_t &data)
+    {
+        const byte *p = (const byte *)(const void *)&data;
+        unsigned int i;
+        for (i = 0; i < sizeof(data); i++)
+            EEPROM.write(ee++, *p++);
+        return i;
+    }
+
+    int readAnything(int ee, Storage_t &data)
+    {
+        byte *p = (byte *)(void *)&data;
+        unsigned int i;
+        for (i = 0; i < sizeof(data); i++)
+            *p++ = EEPROM.read(ee++);
+        return i;
+    }
+
+    void saveStorage()
     {
         size_t size = sizeof(data);
         EEPROM.begin(size * 2);
-        EEPROM_writeAnything(0, data);
+        writeAnything(0, data);
         EEPROM.commit();
     }
 
-    void _loadStorage()
+    void loadStorage()
     {
         size_t size = sizeof(data);
         EEPROM.begin(size * 2);
-        EEPROM_readAnything(0, data);
+        readAnything(0, data);
 
         // reset storage
-        if (_reset)
-        { 
+        if (reset)
+        {
+
+            Serial.println("Storage -> reset");
             data.calibration_saved = false;
             data.wifi_ssid = "";
             data.wifi_password = "";
@@ -66,8 +68,8 @@ class Storage
 
     void _print()
     {
-        Serial.println("STRG -> *** data list ***"); 
-        
+        Serial.println("STRG -> *** data list ***");
+
         Serial.println("  --- calibration ---  ");
         Serial.print("    calibration_saved:\t");
         Serial.println(data.calibration_saved);
@@ -91,38 +93,38 @@ class Storage
         Serial.println(data.wifi_password);
     }
 
-  public:
+public:
     Storage_t data;
 
-    Storage(bool reset)
+    Storage(bool doReset)
     {
-        _reset = reset;
+        reset = doReset;
     }
 
     void print()
     {
-        this->_loadStorage();
-        this->_print();
+        loadStorage();
+        _print();
     }
 
-    void save(bool print = false)
+    void save(bool doPrint = false)
     {
         Serial.println("STRG -> saving... \t");
-        this->_saveStorage();
-        if (print)
+        saveStorage();
+        if (doPrint)
         {
-            this->_print();
+            _print();
         }
     }
 
-    void load(bool print = false)
+    void load(bool doPrint = false)
     {
-        this->_loadStorage();
-        if (print)
+        loadStorage();
+        if (doPrint)
         {
             Serial.println("");
             Serial.print("STRG -> Loaded: ");
-            this->_print();
+            _print();
         }
     }
 };
