@@ -41,8 +41,10 @@ private:
     void (*_on_face_change)(char *);
 
     State state = State::set_first_offset;
-    int X = -1;
-    int Y = -1;
+    int X = 0;
+    int Y = 0;
+    int antX = 999;
+    int antY = 999;
 
     // MPU control/status vars
     uint8_t IntStatus;      // holds actual interrupt status byte from MPU
@@ -187,40 +189,67 @@ private:
         configuration(1);
     }
 
-    char * getFace()
+    bool coordMatch(int y_angle, int x_angle)
     {
         float e = 30; // error margin
+        bool match = false;
+        bool y_match = ((y_angle + e) >= Y && (y_angle - e) <= Y);
+        if (y_angle == 180 || y_angle == -180)
+        {
+            y_match = y_match || ((-y_angle + e) >= Y && (-y_angle - e) <= Y);
+        }
+        bool x_match = ((x_angle + e) >= X && (x_angle - e) <= X);
+        if (x_match == 180 || x_match == -180)
+        {
+            x_match = x_match || ((-x_angle + e) >= X && (-x_angle - e) <= X);
+        }
+
+        match = y_match && x_match;
+
+        if (match)
+        {
+            Serial.print("MPU F -> Y: ");
+            Serial.print(y_angle);
+            Serial.print("\t X: ");
+            Serial.println(x_angle);
+        }
+
+        return match;
+    }
+
+    char *getFace()
+    {
         char *face = "X";
 
-        if (((0 + e) >= Y && (0 - e) <= Y) && ((0 + e) >= X && (0 - e) <= X))
+        if (coordMatch(0, 0))
         {
             face = "A";
         }
-        if (((-0 + e) >= Y && (-0 - e) <= Y) && ((-60 + e) >= X && (-60 - e) <= X))
+        if (coordMatch(0, -60))
         {
             face = "B";
         }
-        if ((((180 + e) >= Y && (180 - e) <= Y) || ((-180 + e) >= Y && (-180 - e) <= Y)) && ((-120 + e) >= X && (-120 - e) <= X))
+        if (coordMatch(120, -180))
         {
             face = "C";
         }
-        if (((60 + e) >= Y && (60 - e) <= Y) && ((0 + e) >= X && (0 - e) <= X))
+        if (coordMatch(-60, 0))
         {
             face = "D";
         }
-        if (((-120 + e) >= Y && (-120 - e) <= Y) && (((180 + e) >= X && (180 - e) <= X) || ((-180 + e) >= X && (-180 - e) <= X)))
+        if (coordMatch(-120, -180))
         {
             face = "E";
         }
-        if (((0 + e) >= Y && (0 - e) <= Y) && ((60 + e) >= X && (60 - e) <= X))
+        if (coordMatch(-180, 120))
         {
             face = "F";
         }
-        if ((((180 + e) >= Y && (180 - e) <= Y) || ((-180 + e) >= Y && (-180 - e) <= Y)) && (((180 + e) >= X && (180 - e) <= X) || ((-180 + e) >= X && (-180 - e) <= X)))
+        if (coordMatch(180, 180))
         {
             face = "H";
         }
-        if (((120 + e) >= Y && (120 - e) <= Y) && ((120 + e) >= X && (120 - e) <= X))
+        if (coordMatch(60, 60))
         {
             face = "G";
         }
@@ -233,7 +262,7 @@ private:
     {
         if (state != State::set_first_offset)
             return;
- 
+
         if (storage.data.calibration_saved)
         {
             Serial.println("MPU -> Set offset from storeage");
@@ -265,7 +294,7 @@ private:
             state = State::set_calibration;
         }
 
-        delay(10);
+        delay(50);
     }
 
     void setCalibration()
@@ -284,7 +313,7 @@ private:
         mpu.setZGyroOffset(gz_offset);
 
         state = State::save_calibration;
-        delay(10);
+        delay(50);
     }
 
     void saveCalibration()
@@ -303,7 +332,7 @@ private:
 
         state = State::init_dmp;
 
-        delay(10);
+        delay(50);
     }
 
     void initDMP()
@@ -341,12 +370,12 @@ private:
             Serial.print(devStatus);
             Serial.println(" )");
 
-            state = State::dmp_error; 
-            
+            state = State::dmp_error;
+
             ESP.restart();
         }
 
-        delay(10);
+        delay(50);
     }
 
     void setMeasuring()
@@ -363,7 +392,6 @@ private:
         if ((IntStatus & 0x10) || fifoCount == 1024)
         {
             mpu.resetFIFO();
-            // Serial.println("FIFO overflow!");
         }
         else if (IntStatus & 0x02)
         {
@@ -383,22 +411,24 @@ private:
             mpu.dmpGetGravity(&gravity, &q);
             mpu.dmpGetYawPitchRoll(ypr, &q, &gravity);
 
-            int thisX = round(ypr[1] * 180 / M_PI);
-            int thisY = round(ypr[2] * 180 / M_PI);
+            antX = round(ypr[1] * 180 / M_PI);
+            antY = round(ypr[2] * 180 / M_PI);
 
-            Serial.print("MPU -> Y: ");
-            Serial.print(Y);
+            Serial.print("MPU S -> Y: ");
+            Serial.print(antY);
             Serial.print("\t X: ");
-            Serial.println(X);
+            Serial.println(antX);
 
             delay(100);
-            if (thisX == X && thisY == Y)
+
+            if (antY == Y && antX == X)
             {
                 state = State::measuring_done;
                 stopDMP();
             }
-            X = thisX;
-            Y = thisY;
+
+            X = antX;
+            Y = antY;
         }
     }
 
@@ -411,11 +441,10 @@ private:
         if (_on_face_change)
         {
             _on_face_change(getFace());
-            
+
             sleep();
         }
- 
-    } 
+    }
 
     void sleep()
     {
@@ -423,13 +452,12 @@ private:
 
         adc_power_off(); // adc power off disables wifi entirely, upstream bug
         esp_sleep_enable_ext0_wakeup(GPIO_NUM_15, 0);
-        delay(500); //1 = High, 0 = Low
+        delay(50); //1 = High, 0 = Low
         adc_power_off();
         esp_deep_sleep_start();
     }
 
 public:
-
     FaceChanger(void (*on_face_change)(char *))
     {
         _on_face_change = on_face_change;
@@ -467,6 +495,4 @@ public:
         setMeasuring();
         triggerFaceChange();
     }
-
-
 };
