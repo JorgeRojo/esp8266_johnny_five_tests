@@ -196,7 +196,7 @@ private:
         {
             face = "A";
         }
-        if (((-30 + e) >= Y && (-30 - e) <= Y) && ((-60 + e) >= X && (-60 - e) <= X))
+        if (((-0 + e) >= Y && (-0 - e) <= Y) && ((-60 + e) >= X && (-60 - e) <= X))
         {
             face = "B";
         }
@@ -386,10 +386,10 @@ private:
             int thisX = round(ypr[1] * 180 / M_PI);
             int thisY = round(ypr[2] * 180 / M_PI);
 
-            Serial.print("MPU -> X: ");
-            Serial.print(X);
-            Serial.print("\t Y: ");
-            Serial.println(Y);
+            Serial.print("MPU -> Y: ");
+            Serial.print(Y);
+            Serial.print("\t X: ");
+            Serial.println(X);
 
             delay(100);
             if (thisX == X && thisY == Y)
@@ -411,6 +411,7 @@ private:
         if (_on_face_change)
         {
             _on_face_change(getFace());
+            
             sleep();
         }
  
@@ -428,6 +429,7 @@ private:
     }
 
 public:
+
     FaceChanger(void (*on_face_change)(char *))
     {
         _on_face_change = on_face_change;
