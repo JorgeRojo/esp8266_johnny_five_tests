@@ -4,6 +4,7 @@
 #include <MPU6050_6Axis_MotionApps20.h>
 #include <Wire.h>
 #include <driver/adc.h>
+//#include <math.h>
 
 //GND - GND
 //VCC - VCC
@@ -30,7 +31,6 @@ enum class State
     init_dmp,
     dmp_error,
     set_measuring,
-    measuring_done,
 };
 
 class FaceChanger
@@ -39,12 +39,11 @@ private:
     MPU6050 mpu;
     Storage storage = Storage(false);
     void (*_on_face_change)(char *);
+    int timeStart = 0;
 
     State state = State::set_first_offset;
-    int X = 0;
-    int Y = 0;
-    int antX = 999;
-    int antY = 999;
+    int X = 0, Y = 0, preX = 999, preY = 999;
+    char *prevFace = "";
 
     // MPU control/status vars
     uint8_t IntStatus;      // holds actual interrupt status byte from MPU
@@ -185,7 +184,7 @@ private:
 
     void stopDMP()
     {
-        mpu.reset();
+       ///mpu.reset();
         configuration(1);
     }
 
@@ -208,10 +207,10 @@ private:
 
         if (match)
         {
-            Serial.print("MPU F -> Y: ");
-            Serial.print(y_angle);
-            Serial.print("\t X: ");
-            Serial.println(x_angle);
+            // Serial.print("MPU F -> Y: ");
+            // Serial.print(y_angle);
+            // Serial.print("\t X: ");
+            // Serial.println(x_angle);
         }
 
         return match;
@@ -249,7 +248,7 @@ private:
         {
             face = "H";
         }
-        if (coordMatch(60, 60))
+        if (coordMatch(60, 0))
         {
             face = "G";
         }
@@ -375,7 +374,7 @@ private:
             ESP.restart();
         }
 
-        delay(50);
+        delay(100);
     }
 
     void setMeasuring()
@@ -411,50 +410,34 @@ private:
             mpu.dmpGetGravity(&gravity, &q);
             mpu.dmpGetYawPitchRoll(ypr, &q, &gravity);
 
-            antX = round(ypr[1] * 180 / M_PI);
-            antY = round(ypr[2] * 180 / M_PI);
+            preY = round(ypr[2] * 180 / M_PI);
+            preX = round(ypr[1] * 180 / M_PI);
 
-            Serial.print("MPU S -> Y: ");
-            Serial.print(antY);
-            Serial.print("\t X: ");
-            Serial.println(antX);
-
-            delay(100);
-
-            if (antY == Y && antX == X)
-            {
-                state = State::measuring_done;
-                stopDMP();
-            }
-
-            X = antX;
-            Y = antY;
+            // Serial.print("MPU S -> Y: ");
+            // Serial.print(preY);
+            // Serial.print("\t X: ");
+            // Serial.println(preX);
         }
-    }
 
-    void triggerFaceChange()
-    {
-
-        if (state != State::measuring_done)
-            return;
-
-        if (_on_face_change)
-        {
-            _on_face_change(getFace());
-
-            sleep();
-        }
     }
 
     void sleep()
     {
-        Serial.println("MPU -> Sleeping");
+        int timeEnd = esp_timer_get_time();
+        int total = round((timeEnd - timeStart) / 1000000);
 
-        adc_power_off(); // adc power off disables wifi entirely, upstream bug
-        esp_sleep_enable_ext0_wakeup(GPIO_NUM_15, 0);
-        delay(50); //1 = High, 0 = Low
-        adc_power_off();
-        esp_deep_sleep_start();
+        if (timeStart > 0 && total > 3)
+        {
+            stopDMP();
+
+            Serial.println("MPU -> Sleeping");
+
+            adc_power_off(); // adc power off disables wifi entirely, upstream bug
+            esp_sleep_enable_ext0_wakeup(GPIO_NUM_15, 0);
+            delay(100); //1 = High, 0 = Low
+            adc_power_off();
+            esp_deep_sleep_start();
+        }
     }
 
 public:
@@ -465,8 +448,6 @@ public:
 
     void start()
     {
-        storage.load();
-
         configuration(1);
 
         // initialize device
@@ -483,6 +464,7 @@ public:
         else
         {
             Serial.println("MPU -> connection successful");
+            storage.load();
         }
     }
 
@@ -493,6 +475,29 @@ public:
         saveCalibration();
         initDMP();
         setMeasuring();
-        triggerFaceChange();
+
+
+        bool measuringEnd = false;
+
+
+        if (preY != Y || preX != X) 
+            timeStart = esp_timer_get_time();
+
+        if (preY == Y && preX == X) 
+            measuringEnd = true;
+
+        Y = preY;
+        X = preX;
+
+        char *face = getFace();
+
+        if (_on_face_change && measuringEnd && prevFace != face)
+        {
+            _on_face_change(face);
+            prevFace = face;
+        }
+
+        sleep();
+        delay(100);
     }
 };
