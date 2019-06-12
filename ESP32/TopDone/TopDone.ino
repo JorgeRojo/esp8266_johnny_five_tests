@@ -8,7 +8,6 @@ void handleFaceChange(char *face)
 {
     Serial.print(">>>>--FACE--->>>> ");
     Serial.println(face);
-    
     if (face != "X")
     {
         rgbLed.blink(0, 255, 0, 10, 60);

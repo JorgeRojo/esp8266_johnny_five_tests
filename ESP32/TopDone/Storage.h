@@ -7,13 +7,10 @@ private:
     typedef struct
     {
         // orientation
-        bool calibration_saved;
-        int ax_offset;
-        int ay_offset;
-        int az_offset;
-        int gx_offset;
-        int gy_offset;
-        int gz_offset;
+        bool mpu6050_saved;
+        float mpu6050_x_offset;
+        float mpu6050_y_offset;
+        float mpu6050_z_offset;
 
         // wifi
         char *wifi_ssid;
@@ -60,7 +57,7 @@ private:
         {
 
             Serial.println("Storage -> reset");
-            data.calibration_saved = false;
+            data.mpu6050_saved = false;
             data.wifi_ssid = "";
             data.wifi_password = "";
         }
@@ -71,26 +68,20 @@ private:
         Serial.println("STRG -> *** data list ***");
 
         Serial.println("  --- calibration ---  ");
-        Serial.print("    calibration_saved:\t");
-        Serial.println(data.calibration_saved);
-        Serial.print("    ax_offset:\t");
-        Serial.println(data.ax_offset);
-        Serial.print("    ay_offset:\t");
-        Serial.println(data.ay_offset);
-        Serial.print("    az_offset:\t");
-        Serial.println(data.az_offset);
-        Serial.print("    gx_offset:\t");
-        Serial.println(data.gx_offset);
-        Serial.print("    gy_offset:\t");
-        Serial.println(data.gy_offset);
-        Serial.print("    gz_offset:\t");
-        Serial.println(data.gz_offset);
+        Serial.print("    mpu6050_saved:\t");
+        Serial.println(data.mpu6050_saved);
+        Serial.print("    mpu6050_x_offset:\t");
+        Serial.println(data.mpu6050_x_offset);
+        Serial.print("    mpu6050_y_offset:\t");
+        Serial.println(data.mpu6050_y_offset);
+        Serial.print("    mpu6050_z_offset:\t");
+        Serial.println(data.mpu6050_z_offset);
 
-        Serial.println("  --- wifi ---  ");
-        Serial.print("    wifi_ssid:\t");
-        Serial.println(data.wifi_ssid);
-        Serial.print("    wifi_password:\t");
-        Serial.println(data.wifi_password);
+        // Serial.println("  --- wifi ---  ");
+        // Serial.print("    wifi_ssid:\t");
+        // Serial.println(data.wifi_ssid);
+        // Serial.print("    wifi_password:\t");
+        // Serial.println(data.wifi_password);
     }
 
 public:
