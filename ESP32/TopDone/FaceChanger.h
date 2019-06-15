@@ -2,7 +2,6 @@
 #include <MPU6050_tockn.h>
 #include <Wire.h>
 #include <driver/adc.h>
-#include "./Storage.h"
 
 //GND - GND
 //VCC - VCC
@@ -27,7 +26,7 @@ MPU6050 mpu6050(Wire);
 class FaceChanger
 {
 private:
-    Storage storage = Storage(false);
+    Storage storage = Storage();
     void (*_on_face_change)(char *);
     int timeStart = 0; 
 
@@ -108,7 +107,7 @@ private:
         {
             face = "F";
         }
-        if (coordMatch(120, -160))
+        if (coordMatch(120, 170))
         {
             face = "H";
         }
@@ -187,12 +186,7 @@ public:
             moveEnd = true;
         }
 
-        // Serial.print("moveEnd ");
-        // Serial.print(moveEnd );
-        // Serial.print(" preY ");
-        // Serial.print(preY);
-        // Serial.print(" preX ");
-        // Serial.println(preX);
+      
 
         Y = preY;
         X = preX;
@@ -200,7 +194,12 @@ public:
         char *face = getFace();
 
         if (_on_face_change && moveEnd && prevFace != face)
-        {
+        {   
+            Serial.print("Y ");
+            Serial.print(Y);
+            Serial.print(" X ");
+            Serial.println(X);
+
             _on_face_change(face);
             prevFace = face;
         }

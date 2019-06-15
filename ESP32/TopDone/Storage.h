@@ -13,8 +13,8 @@ private:
         float mpu6050_z_offset;
 
         // wifi
-        char *wifi_ssid;
-        char *wifi_password;
+        char * wifi_ssid;
+        char * wifi_pass;
 
     } Storage_t;
 
@@ -55,11 +55,10 @@ private:
         // reset storage
         if (reset)
         {
-
             Serial.println("Storage -> reset");
             data.mpu6050_saved = false;
             data.wifi_ssid = "";
-            data.wifi_password = "";
+            data.wifi_pass = "";
         }
     }
 
@@ -77,17 +76,17 @@ private:
         Serial.print("    mpu6050_z_offset:\t");
         Serial.println(data.mpu6050_z_offset);
 
-        // Serial.println("  --- wifi ---  ");
-        // Serial.print("    wifi_ssid:\t");
-        // Serial.println(data.wifi_ssid);
-        // Serial.print("    wifi_password:\t");
-        // Serial.println(data.wifi_password);
+        Serial.println("  --- wifi ---  ");
+        Serial.print("    wifi_ssid:\t");
+        Serial.println(data.wifi_ssid);
+        Serial.print("    wifi_pass:\t");
+        Serial.println(data.wifi_pass);
     }
 
 public:
     Storage_t data;
 
-    Storage(bool doReset)
+    Storage(bool doReset = false)
     {
         reset = doReset;
     }
