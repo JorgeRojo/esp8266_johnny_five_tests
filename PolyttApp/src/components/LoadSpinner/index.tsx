@@ -2,9 +2,9 @@ import React from "react";
 import { ActivityIndicator } from "react-native";
 import {StyleSheet, Text, View} from 'react-native'; 
 
-const LoadSpinner = () => (
+const LoadSpinner = ({ msg = 'Loading...'}) => (
     <View style={styles.wrapper}>
-        <Text style={styles.text}>loading...</Text> 
+        <Text style={styles.text}>{ msg }</Text> 
         <ActivityIndicator size="large"/>
     </View>
 );
