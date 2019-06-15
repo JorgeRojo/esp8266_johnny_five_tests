@@ -3,6 +3,7 @@
 - ``adb devices`` to get list of connected devices
 - ``adb -s {device id/name} reverse tcp:8081 tcp:8081`` to link your device with DevTools
     - ``adb -s 0b08e9510299dd0f reverse tcp:8081 tcp:8081``
+    - ``adb -s 22d4f51237047ece reverse tcp:8081 tcp:8081``
 - ``adb shell input keyevent 82`` to open dev menu in the device
 
 

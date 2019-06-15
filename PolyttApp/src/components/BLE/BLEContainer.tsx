@@ -6,14 +6,13 @@ import utf8 from 'utf8';
 import base64 from 'base-64';
 
 import BLE from "./BLE";
+import LoadSpinner from "../LoadSpinner";
 
 const SERVICE_UUID = "91e88e4d-66b6-40b7-aa14-d5af542a7f0b";
 const CHARACTERISTIC_UUID = "19a09ba4-51f4-45eb-a2d9-bec08dad539e";
 
 
-class BLEContainer extends PureComponent<{
-    ssid: String;
-}> {
+class BLEContainer extends PureComponent {
 
     manager: BleManager;
     device: Device | null;
@@ -21,6 +20,8 @@ class BLEContainer extends PureComponent<{
 
     state = {
         pass: '',
+        wifi: '',
+        wifiList: [],
     }
 
     constructor(props: any) {
@@ -30,16 +31,20 @@ class BLEContainer extends PureComponent<{
     }
 
     info = (str: String) => {
-        console.warn('BLE INFO: ', str);
+        console.info('BLE INFO: ', str);
     }
 
     error = (str: String) => {
         console.warn('BLE ERROR! ', str);
     }
 
-    setPass = ( pass: String) => {
+    setPass = (pass: String) => {
         this.setState({ pass });
     }
+
+    setWifi = (itemValue: any) => {
+        this.setState({ wifi: itemValue }); 
+    } 
 
     startBLEScanner = () => {
         if (this.device && this.isConnected) {
@@ -55,17 +60,45 @@ class BLEContainer extends PureComponent<{
         }
     }
 
+    msgMemo = {
+        msgStart: false,
+        msg: '',
+    };
+    constructMsg = (chunk: string) => {  
+        if (chunk === '<BLEMSG>') {
+            this.msgMemo.msgStart = true;
+            this.msgMemo.msg = '';
+        }
+        else if (chunk === '</BLEMSG>') {
+            this.parseMsg(this.msgMemo.msg);
+            this.msgMemo.msgStart = false;
+            this.msgMemo.msg = '';
+        }
+        else if (this.msgMemo.msgStart) {
+            this.msgMemo.msg += chunk;
+        }
+    }
+    parseMsg = (rawMsg: string) => {
+        try { 
+            const wifiList = JSON.parse(rawMsg);
+            this.setState({ wifiList });
+        } catch (e) {
+            this.error(rawMsg);
+        }
+    }
+
     scanAndConnect() {
 
-        this.manager.startDeviceScan(null, null, (error, device) => { 
+        this.manager.startDeviceScan(null, null, (error, device) => {
             this.info(`scanning... ${device && device.name}`);
 
             if (error) {
                 this.error(error.message);
+                this.setState({ wifiList: [] });
                 return;
             }
 
-            if (device && device.name && device.name.match(/^POLYTTE-/g)) {
+            if (device && device.name && device.name.match(/^TopDone-/g)) {
                 this.info(`connecting... ${device.name}`);
                 this.manager.stopDeviceScan();
 
@@ -76,31 +109,36 @@ class BLEContainer extends PureComponent<{
                         this.info("discovering...");
                         return device.discoverAllServicesAndCharacteristics();
                     })
-                    .then(
-                        device => {
-                            this.info("connected...");
-                            this.isConnected = true;
+                    .then(device => {
 
-                            //TODO: RECEIVE
-                            return device.monitorCharacteristicForService(
-                                SERVICE_UUID,
-                                CHARACTERISTIC_UUID,
-                                (error, characteristic) => {
-                                    if (error) {
-                                        this.error(error.message);
-                                        this.isConnected = false;
-                                        device.cancelConnection();
-                                        this.scanAndConnect();
-                                        return;
-                                    }
-                                    if (characteristic && characteristic.value) {
-                                        this.info(`${base64.decode(characteristic.value)}`);
-                                    }
+                        this.info("connected...");
+                        this.isConnected = true;
+                        this.setState({ wifiList: [] });
+
+                        //TODO: RECEIVE
+                        device.monitorCharacteristicForService(
+                            SERVICE_UUID,
+                            CHARACTERISTIC_UUID,
+                            (error, characteristic) => {
+                                if (error) {
+                                    this.error(error.message);
+                                    this.setState({ wifiList: [] });
+                                    this.isConnected = false;
+                                    device.cancelConnection();
+                                    this.scanAndConnect();
+                                    return;
                                 }
-                            );
-                        },
+                                if (characteristic && characteristic.value) {
+                                    this.constructMsg(base64.decode(characteristic.value));
+                                }
+
+                            }
+                        );
+
+                    },
                         error => {
                             this.error(error.message);
+                            this.setState({ wifiList: [] });
                             this.isConnected = false;
                             device.cancelConnection();
                             this.scanAndConnect();
@@ -108,40 +146,60 @@ class BLEContainer extends PureComponent<{
                     );
             }
         });
+
+
     }
 
-    sendBLEMessage = () => { 
+    sendBLEMessage = () => {
         if (this.device && this.isConnected) {
 
-            const config: Object = {
-                wifi_ssid: this.props.ssid,
+            const config: String = JSON.stringify({
+                wifi_ssid: this.state.wifi,
                 wifi_pass: this.state.pass
-            };
+            });
 
-            const msg: String = "<MSG>" + JSON.stringify(config) + "<#MSG>";
+            const size = 20;
 
-            for (let i = 0; i < Math.ceil(msg.length / 20); i++) {
+            const msg: [String] = [];
+            msg.push("<BLEMSG>".padEnd(size, " ")); 
+            for (let i = 0; i < config.length; i += size) {
+                const chunk = config.slice(i, i + size);
+                msg.push(chunk.padEnd(size, " ")); 
+            }
+            msg.push("</BLEMSG>".padEnd(size, " "));
+
+            msg.forEach((chunk: String) => { 
                 this.device.writeCharacteristicWithoutResponseForService(
                     SERVICE_UUID,
                     CHARACTERISTIC_UUID,
-                    base64.encode(utf8.encode(msg.slice(i * 20, (i + 1) * 20)))
+                    base64.encode(utf8.encode(chunk))
                 );
-            }
+            });
+            
         }
     };
 
     componentWillMount() {
-        this.startBLEScanner();  
+        this.startBLEScanner();
     }
 
-    componentWillUpdate() { 
-        this.startBLEScanner(); 
+    componentWillUpdate() {
+        this.startBLEScanner();
     }
+
+   
 
     render() {
-        return (<BLE
-            ssid={this.props.ssid}
+
+        if(!this.state.wifiList || this.state.wifiList.length <= 0) {
+            return (<LoadSpinner />);
+        }
+
+        return (<BLE 
             pass={this.state.pass}
+            wifi={this.state.wifi}
+            setWifi={this.setWifi}
+            wifiList={this.state.wifiList}
             setPass={this.setPass}
             sendBLEMessage={this.sendBLEMessage}
         />);

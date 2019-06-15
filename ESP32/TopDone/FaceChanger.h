@@ -108,7 +108,7 @@ private:
         {
             face = "F";
         }
-        if (coordMatch(120, 160))
+        if (coordMatch(120, -160))
         {
             face = "H";
         }
