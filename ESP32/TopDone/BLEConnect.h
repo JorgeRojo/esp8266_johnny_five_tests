@@ -66,8 +66,13 @@ bool BLECheckWifiConnection(std::string msg )
 
     const char *ssid = doc["wifi_ssid"];
     const char *pass = doc["wifi_pass"];
+
+    if(ssid && pass) { 
+        wifiConnect.validateWifiConnection(ssid, pass); 
+    }
+
  
-    return ssid && pass && WifiConnect::checkConnection(ssid, pass, true);
+    return wifiConnect.isWifiConnected();
 }
 
 class ClientCallbacks : public BLECharacteristicCallbacks
@@ -122,7 +127,7 @@ private:
 public:
     BLEConnect()
     {
-        deviceName = getDeviceID();
+        deviceName = wifiConnect.getDeviceID();
     }
 
     void start()
@@ -169,7 +174,7 @@ public:
         {
             adStarted = false;
 
-            std::vector<String> wifiList = WifiConnect::getWifiList();
+            std::vector<String> wifiList = wifiConnect.getWifiList();
 
             String msg = "[";
             for (int i = 0; i < wifiList.size(); i++)
@@ -188,12 +193,7 @@ public:
         }
     }
 
-    std::string getDeviceID()
-    {
-        uint64_t chipid = ESP.getEfuseMac();
-        uint16_t chip = (uint16_t)(chipid >> 32);
-        char uid[23];
-        snprintf(uid, 23, "TopDone-%04X%08X", chip, (uint32_t)chipid);
-        return std::string(uid);
-    }
 };
+
+
+BLEConnect bleConnect = BLEConnect();

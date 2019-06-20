@@ -1,7 +1,9 @@
 FROM node:alpine
 RUN mkdir /src
 
-RUN npm install nodemon -g
+RUN apk --no-cache add bash openssl
+
+RUN npm install nodemon  -g
 
 WORKDIR /src
 ADD api/package.json /src/package.json

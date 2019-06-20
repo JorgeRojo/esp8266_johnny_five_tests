@@ -4,23 +4,32 @@
  * Module dependencies.
  */
 
+var fs = require('fs');
+var path = require('path');
 var app = require('../app');
-var io = require('../sockets'); 
+var io = require('../sockets');
 var debug = require('debug')('api:server');
+// var https = require('https');
 var http = require('http');
 
 /**
  * Get port from environment and store in Express.
  */
 
-var port = normalizePort(process.env.PORT || '3000'); 
+var port = normalizePort(process.env.PORT || '3000');
 app.set('port', port);
 
 /**
- * Create HTTP server.
+ * Create HTTPS server.
  */
+// var server = https.createServer({
+//   key: fs.readFileSync('key.pem'),
+//   cert: fs.readFileSync('cert.pem'),
+// }, app);
 
 var server = http.createServer(app);
+
+
 io.listen(server);
 
 /**
@@ -89,4 +98,5 @@ function onListening() {
     ? 'pipe ' + addr
     : 'port ' + addr.port;
   debug('Listening on ' + bind);
+  console.log('Listening on ', addr);
 }

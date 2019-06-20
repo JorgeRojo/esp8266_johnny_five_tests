@@ -15,6 +15,8 @@ private:
         // wifi
         char * wifi_ssid;
         char * wifi_pass;
+        char * wifi_websocket_host;
+        int wifi_websocket_port;
 
     } Storage_t;
 
@@ -117,4 +119,6 @@ public:
             _print();
         }
     }
-};
+}; 
+
+Storage storage = Storage();

@@ -129,3 +129,5 @@ class RGBLed
         black();
     }
 };
+
+RGBLed rgbLed = RGBLed();

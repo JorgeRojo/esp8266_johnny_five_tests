@@ -26,7 +26,6 @@ MPU6050 mpu6050(Wire);
 class FaceChanger
 {
 private:
-    Storage storage = Storage();
     void (*_on_face_change)(char *);
     int timeStart = 0; 
 
@@ -145,7 +144,8 @@ public:
     {
         // createTasks();
 
-        storage.load();
+        Serial.println("MPU -> start");
+
 
         Wire.begin();
         mpu6050.begin();

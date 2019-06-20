@@ -1,46 +1,32 @@
 #include <Arduino.h>
 #include "./Storage.h"
+#include "./RGBLed.h"
 #include "./WifiConnect.h"
 #include "./BLEConnect.h"
 #include "./FaceChanger.h"
-#include "./RGBLed.h"
-
-Storage storage = Storage();
-RGBLed rgbLed = RGBLed();
-WifiConnect wifiConnect = WifiConnect();
-BLEConnect bleConnect = BLEConnect();
 
 void handleFaceChange(char *face)
 {
-    Serial.print(">>>>--FACE--->>>> ");
-    Serial.println(face);
-
-    //TODO: send face by wifi endpoint
+  
+    wifiConnect.sendFace(face);
 
     if (face != "X")
         rgbLed.blink(0, 255, 0, 10, 60);
     else
         rgbLed.blink(255, 0, 0, 10, 60);
- 
 }
+
 FaceChanger faceChanger = FaceChanger(handleFaceChange);
- 
-bool isConnected = false;
+
 void setup()
 {
-    Serial.begin(115200);
+    Serial.begin(115200); 
+    Serial.flush(); 
 
-    storage.load(); 
+    storage.load();
+    wifiConnect.start();
 
-
-    const char *ssid = storage.data.wifi_ssid;
-    const char *pass = storage.data.wifi_pass;
-    isConnected = WifiConnect::checkConnection(ssid, pass);
-
-    Serial.print(">>>-- isConnected --->>> ");
-    Serial.println(isConnected);
-
-    if (isConnected)
+    if (wifiConnect.isWifiConnected())
     {
         faceChanger.start();
     }
@@ -51,13 +37,14 @@ void setup()
 }
 
 void loop()
-{ 
-    if (isConnected)
+{
+    if (wifiConnect.isWifiConnected())
     {
         faceChanger.loop();
+        wifiConnect.loop();
     }
     else
     {
-        bleConnect.loop();
-    } 
+        bleConnect.start();
+    }
 }
