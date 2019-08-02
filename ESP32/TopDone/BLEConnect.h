@@ -52,7 +52,7 @@ void sendLongMessage(BLECharacteristic *pCharacteristic, std::string msg)
     pCharacteristic->notify();
 }
 
-bool BLECheckWifiConnection(std::string msg )
+bool BLECheckWifiConnection(std::string msg)
 {
     StaticJsonDocument<200> doc;
     DeserializationError error = deserializeJson(doc, msg);
@@ -64,14 +64,14 @@ bool BLECheckWifiConnection(std::string msg )
         return false;
     }
 
-    const char *ssid = doc["wifi_ssid"];
-    const char *pass = doc["wifi_pass"];
+    const char *ssid = doc["wifiName"];
+    const char *pass = doc["wifiPass"];
 
-    if(ssid && pass) { 
-        wifiConnect.validateWifiConnection(ssid, pass); 
+    if (ssid && pass)
+    {
+        wifiConnect.validateWifiConnection(ssid, pass);
     }
 
- 
     return wifiConnect.isWifiConnected();
 }
 
@@ -161,7 +161,8 @@ public:
 
     void loop()
     {
-        delay(1000);
+        delay(100);
+        rgbLed.blink(0, 0, 255, 2);
 
         if (!BLEconnected && !adStarted)
         {
@@ -192,8 +193,6 @@ public:
             sendLongMessage(pCharacteristic, toStdString(msg));
         }
     }
-
 };
-
 
 BLEConnect bleConnect = BLEConnect();

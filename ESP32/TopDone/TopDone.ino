@@ -2,12 +2,11 @@
 #include "./Storage.h"
 #include "./RGBLed.h"
 #include "./WifiConnect.h"
-#include "./BLEConnect.h"
 #include "./FaceChanger.h"
+// #include "./BLEConnect.h"
 
 void handleFaceChange(char *face)
 {
-  
     wifiConnect.sendFace(face);
 
     if (face != "X")
@@ -20,10 +19,11 @@ FaceChanger faceChanger = FaceChanger(handleFaceChange);
 
 void setup()
 {
-    Serial.begin(115200); 
-    Serial.flush(); 
+    Serial.begin(115200);
+    Serial.flush();
 
-    storage.load();
+    storage.setup();
+
     wifiConnect.start();
 
     if (wifiConnect.isWifiConnected())
@@ -32,19 +32,19 @@ void setup()
     }
     else
     {
-        bleConnect.start();
+        // bleConnect.start();
     }
 }
 
 void loop()
 {
-    if (wifiConnect.isWifiConnected())
-    {
-        faceChanger.loop();
-        wifiConnect.loop();
-    }
-    else
-    {
-        bleConnect.start();
-    }
+    // if (wifiConnect.isWifiConnected())
+    // {
+    //     faceChanger.loop();
+    //     wifiConnect.loop();
+    // }
+    // else
+    // {
+    //     bleConnect.start();
+    // }
 }

@@ -1,16 +1,14 @@
 #include <Arduino.h>
 #include "./Storage.h"
-#include "./RGBLed.h"
-#include "./WifiConnect.h"
+// #include "./RGBLed.h"
+// #include "./WifiConnect.h"
 // #include "./BLEConnect.h"
 // #include "./FaceChanger.h"
 
 // void handleFaceChange(char *face)
 // {
-//     if (wifiConnect.isWifiConnected() && wifiConnect.isSocketConnected())
-//     {
-//         wifiConnect.sendFace(face);
-//     }
+
+//     wifiConnect.sendFace(face);
 
 //     if (face != "X")
 //         rgbLed.blink(0, 255, 0, 10, 60);
@@ -22,27 +20,27 @@
 
 void setup()
 {
-	Serial.begin(115200);  
- 
-	Serial.setDebugOutput(true);
+    Serial.begin(115200);
+    Serial.flush();
+    delay(100);
+    Serial.printf("\n");
 
-	Serial.println();
-	Serial.println();
-	Serial.println();
- 
+    storage.load(true);
+    delay(100);
 
-	for(uint8_t t = 4; t > 0; t--) {
-		Serial.printf("[SETUP] BOOT WAIT %d...\n", t);
-		Serial.flush();
-		delay(100);
-	}
+    /* DBUG */
+    const char *ssid = "AOCARALLO_2G";
+    const char *pass = "A28042804a*";
+    const char *host = "192.168.1.85";
+    int port = 3000;
+    storage.data.wifiName = const_cast<char *>(ssid);
+    storage.data.wifiPass = const_cast<char *>(pass);
+    storage.data.wifiHost = const_cast<char *>(host);
+    storage.data.wifiPort = port;
+    storage.save(true);
+    delay(100);
 
-    wifiConnect.start();
-
-
-        webSocket.on("connect", on_connect); 
-        webSocket.begin("192.168.1.85", 3000, "/socket.io/??EIO=3&transport=websocket");
-        webSocket.emit("face","{\"foo\":\"XXXX\"}"); 
+    // wifiConnect.start();
 
     // if (wifiConnect.isWifiConnected())
     // {
@@ -59,10 +57,10 @@ void loop()
     // if (wifiConnect.isWifiConnected())
     // {
     //     faceChanger.loop();
+    //     wifiConnect.loop();
     // }
     // else
     // {
     //     bleConnect.start();
     // }
-    wifiConnect.loop();
 }

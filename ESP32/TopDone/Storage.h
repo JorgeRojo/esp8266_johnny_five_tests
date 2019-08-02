@@ -1,124 +1,155 @@
-#include <Arduino.h>
+//https://github.com/espressif/arduino-esp32/tree/master/libraries/EEPROM/examples
+#include <ArduinoJson.h>
 #include <EEPROM.h>
+
+typedef struct
+{
+    bool mpuSaved;
+    long mpuX;
+    long mpuY;
+    long mpuZ;
+    char *wifiName;
+    char *wifiPass;
+    char *wifiHost;
+    int wifiPort;
+} Storage_t;
 
 class Storage
 {
 private:
-    typedef struct
-    {
-        // orientation
-        bool mpu6050_saved;
-        float mpu6050_x_offset;
-        float mpu6050_y_offset;
-        float mpu6050_z_offset;
-
-        // wifi
-        char * wifi_ssid;
-        char * wifi_pass;
-        char * wifi_websocket_host;
-        int wifi_websocket_port;
-
-    } Storage_t;
-
+    String strData;
+    Storage_t data;
+    DeserializationError error;
+    StaticJsonDocument<1000> doc;
     bool reset;
 
-    int writeAnything(int ee, const Storage_t &data)
+    void parseDocData()
     {
-        const byte *p = (const byte *)(const void *)&data;
-        unsigned int i;
-        for (i = 0; i < sizeof(data); i++)
-            EEPROM.write(ee++, *p++);
-        return i;
+        const bool mpuSaved = doc["mpuSaved"];
+        data.mpuSaved = mpuSaved;
+
+        const long mpuX = doc["mpuX"];
+        data.mpuX = mpuX;
+
+        const long mpuY = doc["mpuY"];
+        data.mpuY = mpuY;
+
+        const long mpuZ = doc["mpuZ"];
+        data.mpuZ = mpuZ;
+
+        const char *wifiName = doc["wifiName"];
+        data.wifiName = const_cast<char *>(wifiName);
+
+        const char *wifiPass = doc["wifiPass"];
+        data.wifiPass = const_cast<char *>(wifiPass);
+
+        const char *wifiHost = doc["wifiHost"];
+        data.wifiHost = const_cast<char *>(wifiHost);
+
+        const int wifiPort = doc["wifiPort"];
+        data.wifiPort = wifiPort;
     }
 
-    int readAnything(int ee, Storage_t &data)
+    void getSavedStorage()
     {
-        byte *p = (byte *)(void *)&data;
-        unsigned int i;
-        for (i = 0; i < sizeof(data); i++)
-            *p++ = EEPROM.read(ee++);
-        return i;
+        strData = EEPROM.readString(0);
+        error = deserializeJson(doc, strData);
+
+        if (!error)
+        {
+            parseDocData();
+        }
+        else
+        {
+            Serial.println("STORAGE -> Json deserialize error...");
+        }
+    }
+
+    void setSavedDoc()
+    {
+        getSavedStorage();
+        doc["mpuSaved"] = data.mpuSaved;
+        doc["mpuX"] = data.mpuX;
+        doc["mpuY"] = data.mpuY;
+        doc["mpuZ"] = data.mpuZ;
+        doc["wifiName"] = data.wifiName;
+        doc["wifiPass"] = data.wifiPass;
+        doc["wifiHost"] = data.wifiHost;
+        doc["wifiPort"] = data.wifiPort;
     }
 
     void saveStorage()
     {
-        size_t size = sizeof(data);
-        EEPROM.begin(size * 2);
-        writeAnything(0, data);
+        strData = "";
+        serializeJson(doc, strData);
+        parseDocData();
+        EEPROM.writeString(0, strData);
         EEPROM.commit();
     }
 
-    void loadStorage()
-    {
-        size_t size = sizeof(data);
-        EEPROM.begin(size * 2);
-        readAnything(0, data);
-
-        // reset storage
-        if (reset)
-        {
-            Serial.println("Storage -> reset");
-            data.mpu6050_saved = false;
-            data.wifi_ssid = "";
-            data.wifi_pass = "";
-        }
-    }
-
-    void _print()
-    {
-        Serial.println("STRG -> *** data list ***");
-
-        Serial.println("  --- calibration ---  ");
-        Serial.print("    mpu6050_saved:\t");
-        Serial.println(data.mpu6050_saved);
-        Serial.print("    mpu6050_x_offset:\t");
-        Serial.println(data.mpu6050_x_offset);
-        Serial.print("    mpu6050_y_offset:\t");
-        Serial.println(data.mpu6050_y_offset);
-        Serial.print("    mpu6050_z_offset:\t");
-        Serial.println(data.mpu6050_z_offset);
-
-        Serial.println("  --- wifi ---  ");
-        Serial.print("    wifi_ssid:\t");
-        Serial.println(data.wifi_ssid);
-        Serial.print("    wifi_pass:\t");
-        Serial.println(data.wifi_pass);
-    }
-
 public:
-    Storage_t data;
-
-    Storage(bool doReset = false)
+    Storage()
     {
-        reset = doReset;
+    }
+
+    void setup(bool doPrint = false)
+    {
+        if (!EEPROM.begin(1000))
+        {
+            delay(1000);
+            ESP.restart();
+        }
+
+        getSavedStorage();
+        if (doPrint)
+        {
+            Serial.printf("\nSTORAGE -> Loading...\n");
+            print();
+        }
     }
 
     void print()
     {
-        loadStorage();
-        _print();
+        getSavedStorage();
+
+        Serial.printf(">>>----->>> mpuSaved %d \n", data.mpuSaved);
+        Serial.printf(">>>----->>> mpuX %d \n", data.mpuX);
+        Serial.printf(">>>----->>> mpuY %d \n", data.mpuY);
+        Serial.printf(">>>----->>> mpuZ %d \n", data.mpuZ);
+        Serial.printf(">>>----->>> wifiName %s \n", data.wifiName);
+        Serial.printf(">>>----->>> wifiPass %s \n", data.wifiPass);
+        Serial.printf(">>>----->>> wifiHost %s \n", data.wifiHost);
+        Serial.printf(">>>----->>> wifiPort %d \n", data.wifiPort);
     }
 
-    void save(bool doPrint = false)
+    void saveMpu(const int mpuX, const int mpuY, const int mpuZ)
     {
-        Serial.println("STRG -> saving... \t");
+        setSavedDoc();
+        doc["mpuSaved"] = true;
+        doc["mpuX"] = mpuX;
+        doc["mpuY"] = mpuY;
+        doc["mpuZ"] = mpuZ;
+
+        Serial.println("STORAGE -> Saving mpu...");
         saveStorage();
-        if (doPrint)
-        {
-            _print();
-        }
     }
 
-    void load(bool doPrint = false)
+    void saveWifi(const char *wifiName, const char *wifiPass, const char *wifiHost, const int wifiPort)
     {
-        loadStorage();
-        if (doPrint)
-        {
-            Serial.println("");
-            Serial.print("STRG -> Loaded: ");
-            _print();
-        }
+        setSavedDoc();
+        doc["wifiName"] = wifiName;
+        doc["wifiPass"] = wifiPass;
+        doc["wifiHost"] = wifiHost;
+        doc["wifiPort"] = wifiPort;
+
+        Serial.println("STORAGE -> Saving wifi...");
+        saveStorage();
     }
-}; 
+
+    Storage_t getData()
+    {
+        return data;
+    }
+};
 
 Storage storage = Storage();

@@ -19,20 +19,17 @@
 #define FC_INT_STATUS 0x3A
 #define FC_MPU6050_ADDRESS 0x68 //AD0 is 0
 
-
- 
 MPU6050 mpu6050(Wire);
 
 class FaceChanger
 {
 private:
     void (*_on_face_change)(char *);
-    int timeStart = 0; 
+    int timeStart = 0;
 
     int X = 0, Y = 0, preX = 999, preY = 999;
     char *prevFace = "";
     bool moveEnd = false;
-
 
     void writeByte(uint8_t address, uint8_t subAddress, uint8_t data)
     {
@@ -142,31 +139,29 @@ public:
 
     void start()
     {
-        // createTasks();
-
         Serial.println("MPU -> start");
-
 
         Wire.begin();
         mpu6050.begin();
 
         configuration(1);
 
-        if (storage.data.mpu6050_saved)
+        Storage_t data = storage.getData();
+
+        if (data.mpuSaved)
         {
             mpu6050.setGyroOffsets(
-                storage.data.mpu6050_x_offset,
-                storage.data.mpu6050_y_offset,
-                storage.data.mpu6050_z_offset);
+                data.mpuX,
+                data.mpuY,
+                data.mpuZ);
         }
         else
         {
             mpu6050.calcGyroOffsets(true);
-            storage.data.mpu6050_saved = true;
-            storage.data.mpu6050_x_offset = mpu6050.getGyroXoffset();
-            storage.data.mpu6050_y_offset = mpu6050.getGyroYoffset();
-            storage.data.mpu6050_z_offset = mpu6050.getGyroZoffset();
-            storage.save();
+            storage.saveMpu(
+                mpu6050.getGyroXoffset(),
+                mpu6050.getGyroYoffset(),
+                mpu6050.getGyroZoffset());
         }
     }
 
@@ -178,15 +173,15 @@ public:
 
         delay(10);
 
-        if (preY != Y || preX != X) {
+        if (preY != Y || preX != X)
+        {
             timeStart = millis();
-             moveEnd = false; 
+            moveEnd = false;
         }
-        else {
+        else
+        {
             moveEnd = true;
         }
-
-      
 
         Y = preY;
         X = preX;
@@ -194,11 +189,8 @@ public:
         char *face = getFace();
 
         if (_on_face_change && moveEnd && prevFace != face)
-        {   
-            Serial.print("Y ");
-            Serial.print(Y);
-            Serial.print(" X ");
-            Serial.println(X);
+        {
+            Serial.printf("Y %s X %s \n", Y, X);
 
             _on_face_change(face);
             prevFace = face;
@@ -207,5 +199,3 @@ public:
         sleep();
     }
 };
-
-
